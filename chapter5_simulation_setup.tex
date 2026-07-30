@@ -1,0 +1,2773 @@
+\chapter{Simulation Methodology and Experimental Setup}
+
+\section{Introduction}
+This chapter presents the simulation methodology and experimental setup used to evaluate the proposed temporal-state-aware compact routing method.
+
+The evaluation is designed to examine whether explicit temporal e-link information can improve routing reliability, preserve end-to-end fidelity, reduce request rejection, and limit unnecessary regeneration overhead.
+
+The simulation compares the proposed method with several benchmark routing strategies under different network sizes, traffic loads, memory coherence times, fidelity thresholds, and artificial-overlay configurations.
+
+The experimental methodology contains the following components:
+
+\begin{itemize}
+    \item simulation environment and implementation tools;
+    \item physical quantum-network topology generation;
+    \item artificial entanglement-overlay construction;
+    \item temporal e-link and decoherence parameters;
+    \item traffic and entanglement-request generation;
+    \item benchmark routing methods;
+    \item evaluation metrics;
+    \item experimental scenarios; and
+    \item statistical result collection.
+\end{itemize}
+
+The complete experimental workflow is organized as
+
+\begin{equation}
+    \mathrm{Topology\ Generation}
+    \rightarrow
+    \mathrm{Overlay\ Construction}
+    \rightarrow
+    \mathrm{Traffic\ Generation}
+    \rightarrow
+    \mathrm{Routing}
+    \rightarrow
+    \mathrm{Regeneration}
+    \rightarrow
+    \mathrm{Performance\ Evaluation}.
+\end{equation}
+
+Figure~\ref{fig:simulation_workflow} illustrates the overall simulation workflow used in this thesis.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        node distance=1.4cm,
+        every node/.style={
+            rectangle,
+            rounded corners,
+            draw,
+            align=center,
+            minimum width=4.2cm,
+            minimum height=0.9cm
+        },
+        arrow/.style={->, thick}
+    ]
+
+    \node (topology) {Physical Network\\Topology Generation};
+
+    \node (overlay) [below of=topology] {Artificial Entanglement\\Overlay Construction};
+
+    \node (traffic) [below of=overlay] {Traffic and Entanglement\\Request Generation};
+
+    \node (routing) [below of=traffic] {Routing and Temporal\\Feasibility Evaluation};
+
+    \node (maintenance) [below of=routing] {E-Link Regeneration and\\Overlay Maintenance};
+
+    \node (metrics) [below of=maintenance] {Performance Metrics and\\Statistical Analysis};
+
+    \draw[arrow] (topology) -- (overlay);
+    \draw[arrow] (overlay) -- (traffic);
+    \draw[arrow] (traffic) -- (routing);
+    \draw[arrow] (routing) -- (maintenance);
+    \draw[arrow] (maintenance) -- (metrics);
+
+    \end{tikzpicture}
+    \caption{Overall simulation and experimental-evaluation workflow.}
+    \label{fig:simulation_workflow}
+\end{figure}
+
+The proposed method is evaluated in discrete time slots. During each slot, new requests may arrive, stored artificial e-links may age, fidelity may decrease, swapping may succeed or fail, and selected e-links may be regenerated or discarded.
+
+The simulation therefore maintains both network state and temporal e-link state over the complete experimental horizon.
+
+To ensure a fair comparison, all benchmark methods use the same physical topology, artificial-overlay capacity, request sequence, memory limits, generation probabilities, swapping probabilities, and random seeds.
+
+The primary evaluation questions are:
+
+\begin{enumerate}
+    \item Does temporal-state-aware routing improve end-to-end fidelity?
+    \item Does coherence-budget filtering reduce failed route selections?
+    \item How much regeneration overhead is introduced?
+    \item How does performance change with network size and traffic load?
+    \item Does the method preserve compact-routing efficiency?
+    \item How robust are the results to different parameter weights?
+\end{enumerate}
+
+The numerical values used in the experiments are not treated as universal hardware constants. They are configurable simulation parameters selected from representative ranges reported in quantum-networking literature and varied through sensitivity analysis.
+
+The following sections describe the simulation environment, topology generation, parameter configuration, benchmark methods, evaluation metrics, and experimental scenarios in detail.
+\section{Simulation Environment}
+The proposed routing framework is implemented as a discrete-event and time-slotted simulation in Python. The simulator models physical quantum links, artificial e-links, quantum-memory occupation, entanglement generation, decoherence, swapping, routing requests, and overlay-maintenance actions.
+
+The implementation uses Python because it provides mature graph-processing, numerical-computation, and data-analysis libraries. The principal software components are:
+
+\begin{itemize}
+    \item Python for the simulation engine;
+    \item NetworkX for graph representation and route computation;
+    \item NumPy for numerical operations and random sampling;
+    \item pandas for data storage and experiment aggregation;
+    \item Matplotlib for result visualization; and
+    \item Jupyter Notebook or Visual Studio Code for implementation and analysis.
+\end{itemize}
+
+The physical quantum network is represented as a graph
+
+\begin{equation}
+    G_{\mathrm{P}}
+    =
+    \left(
+    V_2,
+    E_{\mathrm{P}}
+    \right),
+\end{equation}
+
+while the artificial entanglement overlay is represented as a time-dependent graph
+
+\begin{equation}
+    G_{\mathrm{A}}(t)
+    =
+    \left(
+    V_2,
+    E_{\mathrm{A}}(t)
+    \right).
+\end{equation}
+
+Each physical edge stores the following attributes:
+
+\begin{itemize}
+    \item physical distance;
+    \item elementary-entanglement generation probability;
+    \item initial fidelity;
+    \item coherence time;
+    \item expected generation delay; and
+    \item operational success probability.
+\end{itemize}
+
+Each artificial e-link stores:
+
+\begin{itemize}
+    \item creation time;
+    \item current age;
+    \item current and predicted fidelity;
+    \item remaining coherence budget;
+    \item number of stored e-bits;
+    \item structural type;
+    \item utilization history; and
+    \item regeneration state.
+\end{itemize}
+
+The simulator advances through discrete time slots of duration
+
+\begin{equation}
+    \Delta.
+\end{equation}
+
+At each time slot, the simulator performs the following operations:
+
+\begin{enumerate}
+    \item generates new entanglement requests;
+    \item updates artificial e-link ages;
+    \item applies the selected decoherence model;
+    \item classifies e-links as safe, warning, critical, or expired;
+    \item constructs candidate routes;
+    \item evaluates temporal feasibility;
+    \item selects routes and executes swapping;
+    \item updates memory occupation;
+    \item performs regeneration and overlay maintenance; and
+    \item records performance metrics.
+\end{enumerate}
+
+The general simulation-loop structure is shown in Algorithm~\ref{alg:simulation_loop}.
+
+\begin{algorithm}[htbp]
+\caption{Main Simulation Loop}
+\label{alg:simulation_loop}
+\begin{algorithmic}[1]
+\State Initialize physical topology $G_{\mathrm{P}}$
+\State Construct initial artificial overlay $G_{\mathrm{A}}(0)$
+\State Initialize quantum-memory and e-link states
+\For{$t=0$ to $T_{\mathrm{sim}}-1$}
+    \State Generate new requests $\mathcal{D}(t)$
+    \State Update age, fidelity, and coherence budget
+    \State Classify all stored artificial e-links
+    \State Construct temporally usable overlay $G_{\mathrm{U}}(t)$
+    \For{each request $(s,d)\in\mathcal{D}(t)$}
+        \State Construct compact candidate routes
+        \State Apply temporal-feasibility filtering
+        \State Select or repair a route
+        \State Execute swapping and update consumed resources
+    \EndFor
+    \State Rank and execute regeneration actions
+    \State Update artificial overlay and routing tables
+    \State Record metrics for time slot $t$
+\EndFor
+\State Aggregate results over all simulation runs
+\end{algorithmic}
+\end{algorithm}
+
+Random events such as entanglement-generation success and swapping success are sampled using pseudorandom number generation. For reproducibility, every experiment uses a recorded random seed.
+
+Each experimental configuration is repeated over multiple independent runs. Let
+
+\begin{equation}
+    N_{\mathrm{run}}
+\end{equation}
+
+denote the number of independent simulation runs.
+
+For a measured quantity $X$, the reported sample mean is
+
+\begin{equation}
+    \overline{X}
+    =
+    \frac{1}{N_{\mathrm{run}}}
+    \sum_{r=1}^{N_{\mathrm{run}}}
+    X_r.
+\end{equation}
+
+The sample standard deviation is
+
+\begin{equation}
+    s_X
+    =
+    \sqrt{
+    \frac{1}{
+    N_{\mathrm{run}}-1
+    }
+    \sum_{r=1}^{N_{\mathrm{run}}}
+    \left(
+    X_r-\overline{X}
+    \right)^2
+    }.
+\end{equation}
+
+Where appropriate, results are reported with confidence intervals rather than as single-run values.
+
+The simulation code, configuration files, random seeds, and processed result files will be organized in separate folders to support reproducibility and later publication.
+\section{Network Topology Generation}
+The physical quantum network topology determines the available elementary quantum channels and the physical paths used to create artificial e-links.
+
+The physical network is represented by
+
+\begin{equation}
+    G_{\mathrm{P}}
+    =
+    \left(
+    V_2,
+    E_{\mathrm{P}}
+    \right),
+\end{equation}
+
+where $V_2$ is the set of Entanglement Service Providers and $E_{\mathrm{P}}$ is the set of physical quantum links.
+
+The simulations consider three topology categories:
+
+\begin{enumerate}
+    \item random connected topology;
+    \item grid-based topology; and
+    \item small-world topology.
+\end{enumerate}
+
+Using multiple topology types prevents the evaluation from depending on a single network structure.
+
+\subsection{Random Connected Topology}
+
+In the random topology, ESP positions are generated inside a two-dimensional square region.
+
+The coordinate of ESP $v_i$ is
+
+\begin{equation}
+    \mathbf{x}_i
+    =
+    \left(
+    x_i,
+    y_i
+    \right).
+\end{equation}
+
+The Euclidean distance between ESPs $v_i$ and $v_j$ is
+
+\begin{equation}
+    L_{ij}
+    =
+    \sqrt{
+    \left(
+    x_i-x_j
+    \right)^2
+    +
+    \left(
+    y_i-y_j
+    \right)^2
+    }.
+\end{equation}
+
+A physical link is created when
+
+\begin{equation}
+    L_{ij}
+    \leq
+    L_{\max}^{\mathrm{phys}},
+\end{equation}
+
+where $L_{\max}^{\mathrm{phys}}$ is the maximum physical-link distance.
+
+Disconnected topology samples are rejected or repaired by connecting the nearest disconnected components.
+
+\subsection{Grid Topology}
+
+The grid topology arranges ESPs in a regular two-dimensional structure.
+
+Each node is connected to its horizontal and vertical neighbors. Optional diagonal links may be added to increase path diversity.
+
+The grid topology provides a controlled environment for evaluating route length, anchor placement, and temporal-stretch behavior.
+
+\subsection{Small-World Topology}
+
+The small-world topology is generated by starting from a locally connected graph and rewiring selected edges with probability
+
+\begin{equation}
+    p_{\mathrm{rewire}}.
+\end{equation}
+
+This structure combines local clustering with a limited number of long-range physical links.
+
+It is useful for evaluating whether compact routing benefits from short topological paths while remaining robust to aging and fidelity degradation.
+
+\subsection{Network Sizes}
+
+The proposed method is evaluated using several network sizes:
+
+\begin{equation}
+    n
+    \in
+    \left\{
+    20,
+    40,
+    60,
+    80,
+    100
+    \right\}.
+\end{equation}
+
+These values may be adjusted according to simulation runtime and available computing resources.
+
+For every topology configuration, the following conditions are enforced:
+
+\begin{itemize}
+    \item the physical graph is connected;
+    \item every ESP has at least one physical neighbor;
+    \item physical-link distances remain within the configured range;
+    \item the same topology is used by all compared routing methods; and
+    \item multiple independent topology instances are evaluated.
+\end{itemize}
+
+Figure~\ref{fig:example_topology} shows an example physical quantum-network topology.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        node/.style={
+            circle,
+            draw,
+            minimum size=0.8cm,
+            inner sep=1pt
+        },
+        link/.style={thick}
+    ]
+
+    \node[node] (n1) at (0,2) {$v_1$};
+    \node[node] (n2) at (2,3) {$v_2$};
+    \node[node] (n3) at (4,2) {$v_3$};
+    \node[node] (n4) at (1,0) {$v_4$};
+    \node[node] (n5) at (3,0) {$v_5$};
+    \node[node] (n6) at (5,0.5) {$v_6$};
+
+    \draw[link] (n1) -- (n2);
+    \draw[link] (n1) -- (n4);
+    \draw[link] (n2) -- (n3);
+    \draw[link] (n2) -- (n4);
+    \draw[link] (n2) -- (n5);
+    \draw[link] (n3) -- (n5);
+    \draw[link] (n3) -- (n6);
+    \draw[link] (n4) -- (n5);
+    \draw[link] (n5) -- (n6);
+
+    \end{tikzpicture}
+    \caption{Example physical quantum-network topology used to illustrate topology generation.}
+    \label{fig:example_topology}
+\end{figure}
+
+The illustrated topology is conceptual. The actual experimental topologies are generated automatically by the simulation code and stored with their random seeds.
+
+For reproducibility, every generated topology is exported with
+
+\begin{itemize}
+    \item node coordinates;
+    \item physical-edge list;
+    \item link distances;
+    \item topology-generation parameters; and
+    \item random seed.
+\end{itemize}
+
+This topology-generation procedure provides controlled and repeatable physical substrates for constructing the artificial entanglement overlays evaluated in the following sections.
+\section{Physical and Quantum-Link Parameters}
+The physical and quantum-link parameters determine the success probability, delay, fidelity, and temporal lifetime of elementary entanglement resources.
+
+Each physical link $(i,j)\in E_{\mathrm{P}}$ is assigned the parameter set
+
+\begin{equation}
+    \Theta_{ij}^{\mathrm{P}}
+    =
+    \left[
+    L_{ij},
+    p_{ij}^{\mathrm{gen}},
+    F_{ij}^{0},
+    T_{2,ij},
+    q_{ij},
+    D_{ij}^{\mathrm{gen}},
+    S_{ij}
+    \right],
+\end{equation}
+
+where $L_{ij}$ is the physical-link distance, $p_{ij}^{\mathrm{gen}}$ is the elementary-entanglement generation probability, $F_{ij}^{0}$ is the initial fidelity, $T_{2,ij}$ is the coherence time, $q_{ij}$ is the swapping-success probability, $D_{ij}^{\mathrm{gen}}$ is the expected generation delay, and $S_{ij}$ is the number of parallel generation modes.
+
+The parameter values used in the simulations are treated as configurable experimental assumptions rather than universal hardware constants. Each important parameter is varied through sensitivity experiments.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Baseline physical and quantum-link simulation parameters.}
+    \label{tab:physical_parameters}
+    \begin{tabular}{p{4.2cm} p{2.8cm} p{3.5cm}}
+        \toprule
+        \textbf{Parameter} & \textbf{Symbol} & \textbf{Baseline setting} \\
+        \midrule
+        Time-slot duration & $\Delta$ & Configurable \\
+        Physical-link distance & $L_{ij}$ & Topology dependent \\
+        Generation probability & $p_{ij}^{\mathrm{gen}}$ & Distance dependent \\
+        Initial elementary fidelity & $F_{ij}^{0}$ & Configurable range \\
+        Memory coherence time & $T_{2,ij}$ & Configurable range \\
+        Swapping-success probability & $q_{ij}$ & Configurable range \\
+        Number of parallel modes & $S_{ij}$ & Hardware dependent \\
+        Classical coordination delay & $D_{ij}^{\mathrm{coord}}$ & Distance dependent \\
+        Elementary-generation delay & $D_{ij}^{\mathrm{gen}}$ & Probability dependent \\
+        Link-level fidelity threshold & $F_{\min}^{\mathrm{link}}$ & Scenario dependent \\
+        End-to-end fidelity threshold & $F_{\min}^{\mathrm{end}}$ & Scenario dependent \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The elementary-entanglement generation probability is modeled as a decreasing function of physical distance. A simplified attenuation-based model is
+
+\begin{equation}
+    p_{ij}^{\mathrm{gen}}
+    =
+    p_{0}
+    \exp
+    \left(
+    -\alpha L_{ij}
+    \right),
+\end{equation}
+
+where $p_{0}$ is the short-distance generation factor and $\alpha$ is the effective attenuation coefficient.
+
+This expression is used as a simulation abstraction. It does not represent every optical component, detector inefficiency, coupling loss, or protocol-specific heralding process separately.
+
+When $S_{ij}$ independent parallel modes are available, the probability of at least one successful generation event in a time slot is
+
+\begin{equation}
+    p_{ij}^{\mathrm{link}}
+    =
+    1
+    -
+    \left(
+    1-p_{ij}^{\mathrm{gen}}
+    \right)^{S_{ij}}.
+\end{equation}
+
+The expected number of attempts required for one elementary-pair success is
+
+\begin{equation}
+    \mathbb{E}
+    \left[
+    N_{ij}^{\mathrm{attempt}}
+    \right]
+    =
+    \frac{1}{
+    p_{ij}^{\mathrm{link}}
+    }.
+\end{equation}
+
+The approximate expected generation delay is therefore
+
+\begin{equation}
+    D_{ij}^{\mathrm{gen}}
+    =
+    \frac{
+    \Delta_{\mathrm{attempt}}
+    }{
+    p_{ij}^{\mathrm{link}}
+    },
+\end{equation}
+
+where $\Delta_{\mathrm{attempt}}$ is the duration of one generation attempt, including heralding.
+
+The initial fidelity of a successful elementary pair may be modeled as
+
+\begin{equation}
+    F_{ij}^{0}
+    =
+    F_{0}
+    -
+    \xi_L L_{ij}
+    -
+    \epsilon_{ij}^{\mathrm{op}},
+\end{equation}
+
+where $F_{0}$ is the reference short-distance fidelity, $\xi_L$ is a distance-related degradation coefficient, and $\epsilon_{ij}^{\mathrm{op}}$ represents operational error.
+
+For the baseline implementation, fidelity values are clipped to the physically meaningful interval
+
+\begin{equation}
+    \frac{1}{4}
+    \leq
+    F_{ij}^{0}
+    \leq
+    1.
+\end{equation}
+
+Memory coherence times may be homogeneous or heterogeneous.
+
+For a homogeneous experiment,
+
+\begin{equation}
+    T_{2,ij}
+    =
+    T_{2},
+    \qquad
+    \forall (i,j).
+\end{equation}
+
+For a heterogeneous experiment,
+
+\begin{equation}
+    T_{2,ij}
+    \sim
+    \mathcal{U}
+    \left(
+    T_{2}^{\min},
+    T_{2}^{\max}
+    \right),
+\end{equation}
+
+where $\mathcal{U}$ denotes a uniform distribution.
+
+The stored-fidelity evolution follows the selected Werner-state approximation:
+
+\begin{equation}
+    F_{ij}^{\mathrm{eff}}(t)
+    =
+    \frac{1}{4}
+    +
+    \left(
+    F_{ij}^{0}
+    -
+    \frac{1}{4}
+    \right)
+    \exp
+    \left(
+    -\frac{
+    A_{ij}(t)\Delta
+    }{
+    T_{2,ij}
+    }
+    \right).
+\end{equation}
+
+The swapping-success probability at intermediate ESP $v_r$ is denoted by
+
+\begin{equation}
+    q_r
+    \in
+    [0,1].
+\end{equation}
+
+The fidelity-retention factor of the swapping operation is represented by
+
+\begin{equation}
+    \lambda_r
+    \in
+    [0,1].
+\end{equation}
+
+For a route containing multiple artificial e-links, the end-to-end success probability includes the product of the required swapping-success probabilities.
+
+Classical coordination delay is approximated as
+
+\begin{equation}
+    D_{ij}^{\mathrm{coord}}
+    =
+    \frac{
+    L_{ij}
+    }{
+    v_{\mathrm{signal}}
+    },
+\end{equation}
+
+where $v_{\mathrm{signal}}$ is the effective propagation speed of the classical control signal.
+
+The baseline parameters will later be replaced by verified numerical values supported by quantum-networking literature. Every reported experiment will clearly distinguish between literature-derived values, calibrated values, and simulation assumptions.
+\section{Artificial Overlay Configuration}
+The artificial entanglement overlay is constructed on top of the physical quantum network. It contains pre-established entangled connections among Entanglement Service Providers and is used as the logical substrate for compact routing.
+
+At time slot $t$, the overlay is represented by
+
+\begin{equation}
+    G_{\mathrm{A}}(t)
+    =
+    \left(
+    V_2,
+    E_{\mathrm{A}}(t)
+    \right).
+\end{equation}
+
+An artificial e-link may connect two ESPs that are not directly adjacent in the physical network. Such a link is generated through a feasible physical path and is stored in quantum memories at its endpoint ESPs.
+
+The experiments consider two compact-overlay structures:
+
+\begin{enumerate}
+    \item Partial-Anchor overlay; and
+    \item Full-Anchor overlay.
+\end{enumerate}
+
+\subsection{Partial-Anchor Overlay Configuration}
+
+In the Partial-Anchor configuration, only a subset of ESPs is selected as anchors.
+
+Let
+
+\begin{equation}
+    \mathcal{T}
+    \subseteq
+    V_2
+\end{equation}
+
+denote the anchor set.
+
+The number of anchors is defined as
+
+\begin{equation}
+    |\mathcal{T}|
+    =
+    \left\lceil
+    c_{\mathrm{anchor}}
+    \sqrt{n}
+    \right\rceil,
+\end{equation}
+
+where $c_{\mathrm{anchor}}$ is a configurable scaling coefficient.
+
+Anchors may be selected using one of the following strategies:
+
+\begin{itemize}
+    \item random selection;
+    \item highest-degree selection;
+    \item highest-betweenness selection; or
+    \item geographically distributed selection.
+\end{itemize}
+
+The baseline configuration uses degree-based or betweenness-based anchor selection because structurally central ESPs are more likely to provide efficient long-range connectivity.
+
+Each non-anchor ESP maintains local e-neighbor links and one or more links to nearby or assigned anchors.
+
+The Partial-Anchor overlay edge set is
+
+\begin{equation}
+    E_{\mathrm{A}}^{\mathrm{PA}}(t)
+    =
+    E_{\mathrm{local}}(t)
+    \cup
+    E_{\mathrm{anchor}}(t).
+\end{equation}
+
+\subsection{Full-Anchor Overlay Configuration}
+
+In the Full-Anchor configuration, every ESP may maintain local e-neighbor links and selected tracked long-range artificial e-links.
+
+The edge set is
+
+\begin{equation}
+    E_{\mathrm{A}}^{\mathrm{FA}}(t)
+    =
+    E_{\mathrm{local}}(t)
+    \cup
+    E_{\mathrm{tracked}}(t).
+\end{equation}
+
+Each ESP maintains at most
+
+\begin{equation}
+    L_{\max}^{\mathrm{track}}
+\end{equation}
+
+tracked long-range e-links.
+
+Tracked links are selected according to structural utility, expected traffic relevance, and physical generation cost.
+
+\subsection{Local E-Neighbor Construction}
+
+A local artificial e-link between ESPs $v_i$ and $v_j$ is created when the corresponding physical route satisfies a maximum path-length constraint:
+
+\begin{equation}
+    d_{\mathrm{phys}}(v_i,v_j)
+    \leq
+    H_{\mathrm{local}}^{\max},
+\end{equation}
+
+where $d_{\mathrm{phys}}(v_i,v_j)$ is the physical-hop distance and $H_{\mathrm{local}}^{\max}$ is the maximum physical-hop count for a local e-link.
+
+The local-neighbor set of ESP $v_i$ is
+
+\begin{equation}
+    \mathcal{N}_{\mathrm{local}}(v_i)
+    =
+    \left\{
+    v_j:
+    d_{\mathrm{phys}}(v_i,v_j)
+    \leq
+    H_{\mathrm{local}}^{\max}
+    \right\}.
+\end{equation}
+
+\subsection{Artificial E-Link Generation}
+
+For each selected endpoint pair $(i,j)$, the simulator identifies a physical generation path
+
+\begin{equation}
+    P_{ij}^{\mathrm{gen}}.
+\end{equation}
+
+The path is selected using a physical-layer cost based on generation delay, success probability, and expected fidelity.
+
+A simplified physical generation-path cost is
+
+\begin{equation}
+    C_{ij}^{\mathrm{phys}}
+    =
+    \omega_D
+    D^{\mathrm{phys}}
+    \left(
+    P_{ij}^{\mathrm{gen}}
+    \right)
+    +
+    \omega_P
+    \left[
+    -\log
+    P_{\mathrm{succ}}
+    \left(
+    P_{ij}^{\mathrm{gen}}
+    \right)
+    \right]
+    +
+    \omega_F
+    \left(
+    1-F_{ij}^{\mathrm{A},0}
+    \right).
+\end{equation}
+
+The selected generation path is
+
+\begin{equation}
+    P_{ij}^{\mathrm{gen},*}
+    =
+    \arg\min_{P}
+    C_{ij}^{\mathrm{phys}}(P).
+\end{equation}
+
+\subsection{Initial Overlay Density}
+
+The initial overlay density is controlled by
+
+\begin{equation}
+    \rho_{\mathrm{A}}
+    =
+    \frac{
+    2|E_{\mathrm{A}}(0)|
+    }{
+    n(n-1)
+    }.
+\end{equation}
+
+The experiments consider sparse, medium-density, and relatively dense overlay configurations.
+
+A sparse overlay reduces memory and maintenance overhead but may increase route length and temporal disconnection.
+
+A denser overlay provides more route alternatives but consumes more memory and generation resources.
+
+\subsection{Memory Allocation}
+
+Each ESP $v_i$ has memory capacity
+
+\begin{equation}
+    M_i.
+\end{equation}
+
+The number of stored artificial e-links incident to $v_i$ must satisfy
+
+\begin{equation}
+    \sum_{
+    j:
+    (i,j)
+    \in
+    E_{\mathrm{A}}(t)
+    }
+    n_{ij}^{\mathrm{ebit}}(t)
+    \leq
+    M_i.
+\end{equation}
+
+A baseline overlay assigns one stored e-bit per artificial e-link:
+
+\begin{equation}
+    n_{ij}^{\mathrm{ebit}}(0)
+    =
+    1.
+\end{equation}
+
+Additional experiments may allocate multiple e-bits to high-demand or structurally important e-links.
+
+\subsection{Initial E-Link Age}
+
+To avoid an unrealistically synchronized overlay in which every e-link is newly created at time zero, initial ages may be sampled from
+
+\begin{equation}
+    A_{ij}(0)
+    \sim
+    \mathcal{U}
+    \left(
+    0,
+    A_{\mathrm{init}}^{\max}
+    \right).
+\end{equation}
+
+This produces a mixed initial condition containing fresh and partially aged artificial e-links.
+
+A separate cold-start scenario is also evaluated, where
+
+\begin{equation}
+    A_{ij}(0)
+    =
+    0
+\end{equation}
+
+for all initial artificial e-links.
+
+\subsection{Overlay Initialization Procedure}
+
+The initial overlay is constructed through the following steps:
+
+\begin{enumerate}
+    \item generate the physical quantum-network topology;
+    \item select anchor ESPs or tracked-link candidates;
+    \item create required local artificial e-links;
+    \item identify feasible physical generation paths;
+    \item verify memory-capacity constraints;
+    \item assign initial fidelity and coherence parameters;
+    \item assign initial ages; and
+    \item initialize compact routing-table entries.
+\end{enumerate}
+
+Figure~\ref{fig:overlay_example} illustrates a conceptual artificial entanglement overlay constructed over a physical topology.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        phys/.style={
+            circle,
+            draw,
+            minimum size=0.8cm
+        },
+        anchornode/.style={
+            circle,
+            draw,
+            double,
+            minimum size=0.9cm
+        },
+        plink/.style={thin},
+        alink/.style={dashed, thick}
+    ]
+
+\node[anchornode] (v1) at (0,2) {$v_1$};
+    \node[phys] (v2) at (2,3) {$v_2$};
+    \node[phys] (v3) at (4,2) {$v_3$};
+    \node[phys] (v4) at (1,0) {$v_4$};
+\node[anchornode] (v5) at (3,0) {$v_5$};
+    \node[phys] (v6) at (5,0.5) {$v_6$};
+
+    \draw[plink] (v1) -- (v2);
+    \draw[plink] (v1) -- (v4);
+    \draw[plink] (v2) -- (v3);
+    \draw[plink] (v2) -- (v5);
+    \draw[plink] (v3) -- (v5);
+    \draw[plink] (v3) -- (v6);
+    \draw[plink] (v4) -- (v5);
+    \draw[plink] (v5) -- (v6);
+
+    \draw[alink] (v1) to[bend left=15] (v5);
+    \draw[alink] (v2) to[bend left=10] (v6);
+    \draw[alink] (v1) to[bend left=20] (v3);
+
+    \end{tikzpicture}
+    \caption{Conceptual artificial entanglement overlay. Solid lines represent physical quantum links, dashed lines represent stored artificial e-links, and double-circle nodes represent anchor ESPs.}
+    \label{fig:overlay_example}
+\end{figure}
+
+The actual overlays used in the experiments are generated automatically and exported with their anchor sets, tracked-link sets, physical generation paths, routing-table entries, memory occupation, and random seeds.
+\section{Traffic and Entanglement-Request Model}
+The traffic model determines when entanglement requests arrive, which ESP pairs generate requests, how many entangled pairs are required, and how long each request can wait before it is considered unsuccessful.
+
+At time slot $t$, the active request set is denoted by
+
+\begin{equation}
+    \mathcal{D}(t).
+\end{equation}
+
+Each entanglement request is represented by
+
+\begin{equation}
+    d_k
+    =
+    \left(
+    s_k,
+    d_k,
+    b_k,
+    F_k^{\mathrm{req}},
+    D_k^{\max},
+    c_k
+    \right),
+\end{equation}
+
+where
+
+\begin{itemize}
+    \item $s_k$ is the source ESP;
+    \item $d_k$ is the destination ESP;
+    \item $b_k$ is the number of required entangled pairs;
+    \item $F_k^{\mathrm{req}}$ is the minimum required end-to-end fidelity;
+    \item $D_k^{\max}$ is the maximum acceptable completion delay; and
+    \item $c_k$ is the service class of the request.
+\end{itemize}
+
+\subsection{Request-Arrival Process}
+
+The number of new requests arriving during time slot $t$ is denoted by
+
+\begin{equation}
+    N_{\mathrm{arr}}(t).
+\end{equation}
+
+For the baseline experiments, request arrivals are modeled using a Poisson process:
+
+\begin{equation}
+    N_{\mathrm{arr}}(t)
+    \sim
+    \mathrm{Poisson}
+    \left(
+    \lambda_{\mathrm{req}}
+    \right),
+\end{equation}
+
+where $\lambda_{\mathrm{req}}$ is the average number of requests per time slot.
+
+Three traffic-load levels are considered:
+
+\begin{equation}
+    \lambda_{\mathrm{req}}
+    \in
+    \left\{
+    \lambda_{\mathrm{low}},
+    \lambda_{\mathrm{medium}},
+    \lambda_{\mathrm{high}}
+    \right\}.
+\end{equation}
+
+This enables evaluation under lightly loaded, moderately loaded, and congested network conditions.
+
+\subsection{Source--Destination Selection}
+
+For uniform traffic, source and destination ESPs are selected randomly from $V_2$, subject to
+
+\begin{equation}
+    s_k
+    \neq
+    d_k.
+\end{equation}
+
+A non-uniform demand model is also considered to represent traffic concentration around popular ESPs or anchor regions.
+
+Under hotspot traffic, a subset
+
+\begin{equation}
+    \mathcal{H}
+    \subseteq
+    V_2
+\end{equation}
+
+is selected as the hotspot set.
+
+Requests involving hotspot ESPs are generated with probability
+
+\begin{equation}
+    p_{\mathrm{hot}}.
+\end{equation}
+
+The remaining requests follow uniform source--destination selection.
+
+\subsection{Entanglement Demand Size}
+
+The number of requested entangled pairs is denoted by
+
+\begin{equation}
+    b_k.
+\end{equation}
+
+The baseline experiments use single-pair requests:
+
+\begin{equation}
+    b_k
+    =
+    1.
+\end{equation}
+
+Additional experiments consider multi-pair requests selected from
+
+\begin{equation}
+    b_k
+    \in
+    \left\{
+    1,
+    2,
+    4,
+    8
+    \right\}.
+\end{equation}
+
+Multi-pair requests increase memory pressure and may require repeated generation and swapping operations.
+
+\subsection{Fidelity Requirement}
+
+Each request specifies a minimum end-to-end fidelity requirement:
+
+\begin{equation}
+    F_k^{\mathrm{req}}.
+\end{equation}
+
+The experiments consider several service levels, for example:
+
+\begin{equation}
+    F_k^{\mathrm{req}}
+    \in
+    \left\{
+    F_{\mathrm{low}},
+    F_{\mathrm{medium}},
+    F_{\mathrm{high}}
+    \right\}.
+\end{equation}
+
+Higher fidelity requirements reduce the number of feasible routes and may increase purification or regeneration demand.
+
+\subsection{Request Deadline}
+
+Each request is assigned a maximum completion delay:
+
+\begin{equation}
+    D_k^{\max}.
+\end{equation}
+
+A request is successfully served only if end-to-end entanglement is established before this deadline.
+
+The request waiting time at slot $t$ is
+
+\begin{equation}
+    W_k(t)
+    =
+    t
+    -
+    t_k^{\mathrm{arr}},
+\end{equation}
+
+where $t_k^{\mathrm{arr}}$ is the arrival time of request $k$.
+
+A request is expired when
+
+\begin{equation}
+    W_k(t)\Delta
+    >
+    D_k^{\max}.
+\end{equation}
+
+Expired requests are counted as rejected or deadline-violating requests.
+
+\subsection{Service Classes}
+
+Three request classes are considered:
+
+\begin{enumerate}
+    \item best-effort requests;
+    \item delay-sensitive requests; and
+    \item fidelity-sensitive requests.
+\end{enumerate}
+
+Best-effort requests use moderate fidelity and delay requirements.
+
+Delay-sensitive requests use smaller values of $D_k^{\max}$.
+
+Fidelity-sensitive requests use larger values of $F_k^{\mathrm{req}}$.
+
+The request class influences route-selection priority and regeneration urgency.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Entanglement-request service classes used in the simulation.}
+    \label{tab:request_classes}
+    \begin{tabular}{p{3.4cm} p{3.4cm} p{3.4cm}}
+        \toprule
+        \textbf{Service class} &
+        \textbf{Main requirement} &
+        \textbf{Routing preference} \\
+        \midrule
+        Best effort &
+        Moderate fidelity and delay &
+        Minimum total route cost \\
+        Delay sensitive &
+        Short completion deadline &
+        Low predicted route delay \\
+        Fidelity sensitive &
+        High end-to-end fidelity &
+        High predicted consumption fidelity \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Request Queue}
+
+Requests that cannot be served immediately may be placed in a waiting queue.
+
+The queue at time $t$ is denoted by
+
+\begin{equation}
+    \mathcal{Q}_{\mathrm{req}}(t).
+\end{equation}
+
+A request remains in the queue when
+
+\begin{itemize}
+    \item no directly feasible route is available;
+    \item a repairable route is being regenerated;
+    \item required memory resources are temporarily unavailable; or
+    \item the request deadline has not yet expired.
+\end{itemize}
+
+Requests may be ordered using first-in-first-out scheduling or priority-based scheduling.
+
+The baseline implementation uses a priority score
+
+\begin{equation}
+    \Pi_k^{\mathrm{req}}(t)
+    =
+    \zeta_D
+    \frac{
+    W_k(t)
+    }{
+    D_k^{\max}/\Delta
+    }
+    +
+    \zeta_F
+    F_k^{\mathrm{req}}
+    +
+    \zeta_C
+    c_k,
+\end{equation}
+
+where the coefficients control the relative importance of urgency, fidelity requirement, and service class.
+
+\subsection{Request Outcome}
+
+The outcome of request $k$ is represented by
+
+\begin{equation}
+    Y_k
+    =
+    \begin{cases}
+        1, & \text{if the request is successfully served},\\
+        0, & \text{otherwise}.
+    \end{cases}
+\end{equation}
+
+A successful request must satisfy
+
+\begin{equation}
+    F_k^{\mathrm{end}}
+    \geq
+    F_k^{\mathrm{req}}
+\end{equation}
+
+and
+
+\begin{equation}
+    D_k^{\mathrm{completion}}
+    \leq
+    D_k^{\max}.
+\end{equation}
+
+Figure~\ref{fig:request_lifecycle} illustrates the request-processing lifecycle.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        node distance=1.5cm,
+        block/.style={
+            rectangle,
+            rounded corners,
+            draw,
+            align=center,
+            minimum width=3.4cm,
+            minimum height=0.9cm
+        },
+        decision/.style={
+            diamond,
+            draw,
+            align=center,
+            aspect=2
+        },
+        arrow/.style={->, thick}
+    ]
+
+    \node[block] (arrival) {Request Arrival};
+    \node[block, below of=arrival] (candidate) {Candidate Route\\Construction};
+    \node[decision, below of=candidate, yshift=-0.3cm] (feasible) {Feasible route?};
+    \node[block, below left of=feasible, xshift=-1.8cm, yshift=-0.8cm] (serve) {Execute Route\\and Swapping};
+    \node[block, below right of=feasible, xshift=1.8cm, yshift=-0.8cm] (queue) {Queue or\\Route Repair};
+    \node[decision, below of=queue, yshift=-0.4cm] (deadline) {Deadline exceeded?};
+    \node[block, below left of=deadline, xshift=-1.5cm, yshift=-0.8cm] (retry) {Retry Routing};
+    \node[block, below right of=deadline, xshift=1.5cm, yshift=-0.8cm] (reject) {Reject Request};
+
+    \draw[arrow] (arrival) -- (candidate);
+    \draw[arrow] (candidate) -- (feasible);
+    \draw[arrow] (feasible) -- node[above left]{Yes} (serve);
+    \draw[arrow] (feasible) -- node[above right]{No} (queue);
+    \draw[arrow] (queue) -- (deadline);
+    \draw[arrow] (deadline) -- node[above left]{No} (retry);
+    \draw[arrow] (deadline) -- node[above right]{Yes} (reject);
+    \draw[arrow] (retry.west) -| (candidate.west);
+
+    \end{tikzpicture}
+    \caption{Lifecycle of an entanglement-distribution request in the simulation.}
+    \label{fig:request_lifecycle}
+\end{figure}
+
+The same generated request sequence is provided to every routing method in a given experimental run. This ensures that differences in performance are caused by routing and maintenance decisions rather than by different traffic realizations.
+\section{Benchmark Routing Methods}
+The proposed method is compared with multiple benchmark routing strategies. All methods operate on the same physical topology, initial artificial overlay, request sequence, memory capacity, generation outcomes, swapping outcomes, and random seeds.
+
+The purpose of the comparison is to determine whether the performance improvement is caused specifically by temporal-state awareness rather than by differences in available network resources.
+
+The following benchmark methods are considered.
+
+\subsection{Shortest-Hop Routing}
+
+Shortest-Hop Routing selects the candidate route with the minimum number of artificial e-links:
+
+\begin{equation}
+    R_{s,d}^{\mathrm{SH}}(t)
+    =
+    \arg\min_{
+    R\in\mathcal{R}_{s,d}^{\mathrm{cand}}(t)
+    }
+    |E(R)|.
+\end{equation}
+
+This method does not explicitly consider fidelity, age, coherence budget, regeneration cost, or predicted route-completion delay.
+
+It represents a topology-oriented routing baseline.
+
+\subsection{Static Entangling-Cost Routing}
+
+Static Entangling-Cost Routing assigns each artificial e-link a fixed cost:
+
+\begin{equation}
+    w_{\mathrm{static}}(i,j).
+\end{equation}
+
+The selected route is
+
+\begin{equation}
+    R_{s,d}^{\mathrm{static}}(t)
+    =
+    \arg\min_{
+    R\in\mathcal{R}_{s,d}^{\mathrm{cand}}(t)
+    }
+    \sum_{(i,j)\in E(R)}
+    w_{\mathrm{static}}(i,j).
+\end{equation}
+
+The link cost may include physical generation distance, hop count, or expected establishment cost, but it is not updated according to the current e-link age or coherence budget.
+
+This baseline represents the original compact-routing behavior without explicit temporal-state awareness.
+
+\subsection{Fidelity-Only Routing}
+
+Fidelity-Only Routing selects the candidate route with the highest predicted end-to-end fidelity:
+
+\begin{equation}
+    R_{s,d}^{\mathrm{FO}}(t)
+    =
+    \arg\max_{
+    R\in\mathcal{R}_{s,d}^{\mathrm{cand}}(t)
+    }
+    \widehat{F}_{s,d}^{\mathrm{end}}(R,t).
+\end{equation}
+
+Routes below the required fidelity threshold are rejected.
+
+This method considers fidelity but does not explicitly optimize coherence-budget margin, regeneration overhead, structural cost, or request delay.
+
+\subsection{Age-Only Routing}
+
+Age-Only Routing prefers routes containing the freshest artificial e-links.
+
+The route-level age cost is
+
+\begin{equation}
+    C_A(R,t)
+    =
+    \sum_{(i,j)\in E(R)}
+    \frac{
+    A_{ij}(t)
+    }{
+    A_{ij}^{\max}
+    }.
+\end{equation}
+
+The selected route is
+
+\begin{equation}
+    R_{s,d}^{\mathrm{AO}}(t)
+    =
+    \arg\min_{
+    R\in\mathcal{R}_{s,d}^{\mathrm{cand}}(t)
+    }
+    C_A(R,t).
+\end{equation}
+
+This baseline evaluates whether age alone is sufficient for reliable routing.
+
+\subsection{Current-Fidelity-Aware Routing}
+
+Current-Fidelity-Aware Routing uses the fidelity measured at route-selection time but does not predict additional degradation before consumption.
+
+The selected route is
+
+\begin{equation}
+    R_{s,d}^{\mathrm{CF}}(t)
+    =
+    \arg\max_{
+    R\in\mathcal{R}_{s,d}^{\mathrm{cand}}(t)
+    }
+    F_{s,d}^{\mathrm{current}}(R,t).
+\end{equation}
+
+This method helps isolate the benefit of consumption-time fidelity prediction.
+
+\subsection{Reactive-Regeneration Routing}
+
+Reactive-Regeneration Routing uses static or fidelity-aware route selection and regenerates an e-link only after the selected route becomes infeasible.
+
+No proactive regeneration is performed.
+
+The regeneration decision satisfies
+
+\begin{equation}
+    r_{ij}^{\mathrm{reactive}}(t)
+    =
+    1
+\end{equation}
+
+only when e-link $(i,j)$ directly blocks an active request.
+
+This benchmark evaluates whether proactive maintenance provides measurable benefit over failure-triggered repair.
+
+\subsection{Proposed Method without Regeneration}
+
+This ablation variant uses temporal monitoring, coherence-budget filtering, and time-dependent route selection but disables all regeneration actions:
+
+\begin{equation}
+    R_{\max}
+    =
+    0.
+\end{equation}
+
+It isolates the contribution of proactive and reactive regeneration.
+
+\subsection{Proposed Method without Coherence-Budget Filtering}
+
+This ablation variant removes the coherence-budget feasibility condition.
+
+A route may be selected when its predicted fidelity is acceptable even if
+
+\begin{equation}
+    B_{ij}(R,t)
+    <
+    \delta_{\mathrm{safe}}.
+\end{equation}
+
+This comparison measures the specific contribution of the remaining coherence-budget model.
+
+\subsection{Proposed Method without Consumption-Time Prediction}
+
+This variant uses current e-link fidelity instead of predicted consumption-time fidelity:
+
+\begin{equation}
+    \widehat{F}_{ij}^{\mathrm{cons}}(R,t)
+    =
+    F_{ij}^{\mathrm{eff}}(t).
+\end{equation}
+
+It evaluates whether predicting additional waiting and swapping delay improves route reliability.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Comparison of the proposed method and benchmark routing strategies.}
+    \label{tab:benchmark_methods}
+    \begin{tabular}{p{3.4cm} c c c c}
+        \toprule
+        \textbf{Method} &
+        \textbf{Age} &
+        \textbf{Fidelity} &
+        \textbf{Coherence budget} &
+        \textbf{Regeneration} \\
+        \midrule
+        Shortest-Hop &
+        No & No & No & No \\
+        Static Entangling Cost &
+        No & Optional static & No & No \\
+        Fidelity-Only &
+        No & Yes & No & No \\
+        Age-Only &
+        Yes & No & No & No \\
+        Current-Fidelity-Aware &
+        Indirectly & Current only & No & No \\
+        Reactive Regeneration &
+        Optional & Optional & No & Reactive \\
+        Proposed without Regeneration &
+        Yes & Predicted & Yes & No \\
+        Proposed without Budget Filtering &
+        Yes & Predicted & No & Yes \\
+        Proposed without Prediction &
+        Yes & Current only & Yes & Yes \\
+        Proposed Full Method &
+        Yes & Predicted & Yes & Proactive and reactive \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+For fairness, every method is constrained by the same maximum candidate-route count
+
+\begin{equation}
+    K_{\max},
+\end{equation}
+
+maximum overlay-hop count
+
+\begin{equation}
+    H_{\max},
+\end{equation}
+
+memory capacities, fidelity thresholds, and request deadlines.
+
+The benchmark set supports both direct performance comparison and ablation analysis. Direct comparison evaluates the proposed method against conventional routing strategies, while ablation analysis determines which proposed components contribute most to the final performance.
+\section{Evaluation Metrics}
+The performance of the proposed method is evaluated using routing reliability, fidelity, delay, resource-consumption, regeneration, and scalability metrics.
+
+No single metric is sufficient because a routing method may improve fidelity while increasing delay, memory usage, or regeneration overhead. Therefore, the evaluation considers multiple complementary measures.
+
+\subsection{Request Success Ratio}
+
+The request success ratio measures the fraction of submitted requests that successfully establish end-to-end entanglement within their fidelity and delay requirements.
+
+Let
+
+\begin{equation}
+    N_{\mathrm{success}}
+\end{equation}
+
+denote the number of successfully completed requests, and let
+
+\begin{equation}
+    N_{\mathrm{total}}
+\end{equation}
+
+denote the total number of generated requests.
+
+The request success ratio is
+
+\begin{equation}
+    P_{\mathrm{success}}
+    =
+    \frac{
+    N_{\mathrm{success}}
+    }{
+    N_{\mathrm{total}}
+    }.
+\end{equation}
+
+A request is counted as successful only when
+
+\begin{equation}
+    F_k^{\mathrm{end}}
+    \geq
+    F_k^{\mathrm{req}}
+\end{equation}
+
+and
+
+\begin{equation}
+    D_k^{\mathrm{completion}}
+    \leq
+    D_k^{\max}.
+\end{equation}
+
+\subsection{Request Rejection Ratio}
+
+The request rejection ratio is
+
+\begin{equation}
+    P_{\mathrm{reject}}
+    =
+    \frac{
+    N_{\mathrm{reject}}
+    }{
+    N_{\mathrm{total}}
+    }.
+\end{equation}
+
+Rejected requests include requests for which no feasible or repairable route exists and requests whose deadlines expire before completion.
+
+\subsection{Temporal Disconnection Ratio}
+
+A source--destination pair is temporally disconnected when a structural path exists but no route satisfies the current temporal constraints.
+
+The temporal disconnection ratio is
+
+\begin{equation}
+    P_{\mathrm{disc}}
+    =
+    \frac{
+    N_{\mathrm{temporally\ disconnected}}
+    }{
+    N_{\mathrm{route\ evaluations}}
+    }.
+\end{equation}
+
+This metric directly measures the effect of stale or low-coherence artificial e-links.
+
+\subsection{Average End-to-End Fidelity}
+
+The average realized end-to-end fidelity is calculated over successfully completed requests:
+
+\begin{equation}
+    \overline{F}_{\mathrm{end}}
+    =
+    \frac{
+    1
+    }{
+    N_{\mathrm{success}}
+    }
+    \sum_{
+    k:Y_k=1
+    }
+    F_k^{\mathrm{end}}.
+\end{equation}
+
+The minimum observed successful fidelity is also recorded:
+
+\begin{equation}
+    F_{\mathrm{end}}^{\min}
+    =
+    \min_{
+    k:Y_k=1
+    }
+    F_k^{\mathrm{end}}.
+\end{equation}
+
+\subsection{Fidelity-Violation Ratio}
+
+A fidelity violation occurs when a route is selected but the realized end-to-end fidelity falls below the request requirement.
+
+The fidelity-violation ratio is
+
+\begin{equation}
+    P_{\mathrm{F\text{-}viol}}
+    =
+    \frac{
+    N_{\mathrm{fidelity\ violations}}
+    }{
+    N_{\mathrm{executed\ routes}}
+    }.
+\end{equation}
+
+This metric is important for evaluating the benefit of consumption-time fidelity prediction.
+
+\subsection{Average Completion Delay}
+
+For successfully completed requests, the average completion delay is
+
+\begin{equation}
+    \overline{D}_{\mathrm{completion}}
+    =
+    \frac{
+    1
+    }{
+    N_{\mathrm{success}}
+    }
+    \sum_{
+    k:Y_k=1
+    }
+    D_k^{\mathrm{completion}}.
+\end{equation}
+
+The delay includes queueing, coordination, regeneration, purification, and swapping time.
+
+\subsection{Deadline-Violation Ratio}
+
+The deadline-violation ratio is
+
+\begin{equation}
+    P_{\mathrm{D\text{-}viol}}
+    =
+    \frac{
+    N_{\mathrm{deadline\ violations}}
+    }{
+    N_{\mathrm{total}}
+    }.
+\end{equation}
+
+This metric is especially important for delay-sensitive request classes.
+
+\subsection{Average Route Length}
+
+The average number of artificial e-links used by successful routes is
+
+\begin{equation}
+    \overline{H}
+    =
+    \frac{
+    1
+    }{
+    N_{\mathrm{success}}
+    }
+    \sum_{
+    k:Y_k=1
+    }
+    |E(R_k)|.
+\end{equation}
+
+A smaller route length generally reduces the number of swapping operations, although it does not automatically guarantee higher fidelity.
+
+\subsection{Temporal Entangling Stretch}
+
+The temporal entangling stretch for request $(s,d)$ is
+
+\begin{equation}
+    ES_t(s,d)
+    =
+    \frac{
+    W_t
+    \left(
+    R_{\mathrm{selected}}
+    \right)
+    }{
+    W_t
+    \left(
+    R_{\mathrm{optimal}}^{\mathrm{TF}}
+    \right)
+    }.
+\end{equation}
+
+The average temporal stretch is
+
+\begin{equation}
+    \overline{ES}
+    =
+    \frac{
+    1
+    }{
+    N_{\mathrm{evaluated}}
+    }
+    \sum
+    ES_t(s,d).
+\end{equation}
+
+The $95$th-percentile stretch is also reported to capture high-cost tail behavior.
+
+\subsection{Stretch-Bound Violation Ratio}
+
+For the Partial-Anchor configuration, a bound violation is recorded when
+
+\begin{equation}
+    ES_t^{\mathrm{PA}}
+    >
+    5.
+\end{equation}
+
+For the Full-Anchor configuration, a bound violation is recorded when
+
+\begin{equation}
+    ES_t^{\mathrm{FA}}
+    >
+    3.
+\end{equation}
+
+The violation ratio is
+
+\begin{equation}
+    P_{\mathrm{stretch\text{-}viol}}
+    =
+    \frac{
+    N_{\mathrm{stretch\ violations}}
+    }{
+    N_{\mathrm{evaluated\ routes}}
+    }.
+\end{equation}
+
+These values are evaluated empirically and are not assumed to remain valid under temporal degradation.
+
+\subsection{Regeneration Count}
+
+The total number of regeneration actions is
+
+\begin{equation}
+    N_{\mathrm{regen}}
+    =
+    \sum_{t=1}^{T}
+    \sum_{(i,j)}
+    r_{ij}(t).
+\end{equation}
+
+The average number of regeneration actions per time slot is
+
+\begin{equation}
+    \overline{N}_{\mathrm{regen}}
+    =
+    \frac{
+    N_{\mathrm{regen}}
+    }{
+    T
+    }.
+\end{equation}
+
+\subsection{Regeneration Success Ratio}
+
+The regeneration success ratio is
+
+\begin{equation}
+    P_{\mathrm{regen\text{-}success}}
+    =
+    \frac{
+    N_{\mathrm{successful\ regenerations}}
+    }{
+    N_{\mathrm{regen}}
+    }.
+\end{equation}
+
+\subsection{Regeneration Overhead}
+
+The regeneration overhead is measured in terms of generation attempts, delay, and memory use.
+
+A normalized regeneration-overhead metric is
+
+\begin{equation}
+    C_{\mathrm{regen}}^{\mathrm{norm}}
+    =
+    \omega_1
+    \frac{
+    N_{\mathrm{gen\ attempts}}
+    }{
+    N_{\mathrm{gen\ attempts}}^{\max}
+    }
+    +
+    \omega_2
+    \frac{
+    D_{\mathrm{regen}}^{\mathrm{total}}
+    }{
+    D_{\mathrm{sim}}
+    }
+    +
+    \omega_3
+    \frac{
+    M_{\mathrm{regen}}^{\mathrm{peak}}
+    }{
+    M_{\mathrm{total}}
+    },
+\end{equation}
+
+where
+
+\begin{equation}
+    \omega_1+\omega_2+\omega_3=1.
+\end{equation}
+
+\subsection{Quantum-Memory Utilization}
+
+The memory utilization of ESP $v_i$ at time $t$ is
+
+\begin{equation}
+    U_i^{\mathrm{mem}}(t)
+    =
+    \frac{
+    m_i(t)
+    }{
+    M_i
+    }.
+\end{equation}
+
+The network-wide average memory utilization is
+
+\begin{equation}
+    \overline{U}^{\mathrm{mem}}
+    =
+    \frac{
+    1
+    }{
+    Tn
+    }
+    \sum_{t=1}^{T}
+    \sum_{i=1}^{n}
+    U_i^{\mathrm{mem}}(t).
+\end{equation}
+
+Peak memory utilization is also recorded to identify temporary resource bottlenecks.
+
+\subsection{Artificial E-Link Utilization}
+
+The utilization ratio of artificial e-link $(i,j)$ is
+
+\begin{equation}
+    U_{ij}^{\mathrm{link}}
+    =
+    \frac{
+    N_{ij}^{\mathrm{selected}}
+    }{
+    T
+    }.
+\end{equation}
+
+This metric helps determine whether maintained anchor or tracked links provide sufficient routing benefit.
+
+\subsection{Stale-Link Selection Ratio}
+
+The stale-link selection ratio measures how often a routing method attempts to use an e-link that becomes unusable before consumption:
+
+\begin{equation}
+    P_{\mathrm{stale\text{-}select}}
+    =
+    \frac{
+    N_{\mathrm{stale\ link\ selections}}
+    }{
+    N_{\mathrm{selected\ e\text{-}links}}
+    }.
+\end{equation}
+
+This is one of the primary metrics for comparing temporal-state-aware and static routing.
+
+\subsection{Routing Computation Time}
+
+The average route-selection computation time is
+
+\begin{equation}
+    \overline{T}_{\mathrm{route}}
+    =
+    \frac{
+    1
+    }{
+    N_{\mathrm{route\ evaluations}}
+    }
+    \sum
+    T_{\mathrm{route}}^{(k)}.
+\end{equation}
+
+This metric evaluates practical algorithmic scalability.
+
+\subsection{Routing-Table Size}
+
+The average routing-table size is
+
+\begin{equation}
+    \overline{S}_{\mathrm{table}}
+    =
+    \frac{
+    1
+    }{
+    nT
+    }
+    \sum_{t=1}^{T}
+    \sum_{i=1}^{n}
+    |\mathcal{T}_i(t)|.
+\end{equation}
+
+The maximum table size is also reported:
+
+\begin{equation}
+    S_{\mathrm{table}}^{\max}
+    =
+    \max_{i,t}
+    |\mathcal{T}_i(t)|.
+\end{equation}
+
+These metrics verify whether the proposed method preserves compact routing state.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Summary of principal evaluation metrics.}
+    \label{tab:evaluation_metrics}
+    \begin{tabular}{p{4.2cm} p{3.2cm} p{4.0cm}}
+        \toprule
+        \textbf{Metric} &
+        \textbf{Preferred direction} &
+        \textbf{Purpose} \\
+        \midrule
+        Request success ratio &
+        Higher &
+        Overall service reliability \\
+        Average end-to-end fidelity &
+        Higher &
+        Entanglement quality \\
+        Fidelity-violation ratio &
+        Lower &
+        Prediction accuracy and reliability \\
+        Average completion delay &
+        Lower &
+        Service responsiveness \\
+        Temporal disconnection ratio &
+        Lower &
+        Robustness to stale links \\
+        Temporal entangling stretch &
+        Lower &
+        Route-cost efficiency \\
+        Regeneration overhead &
+        Lower &
+        Maintenance efficiency \\
+        Memory utilization &
+        Balanced &
+        Resource efficiency \\
+        Stale-link selection ratio &
+        Lower &
+        Temporal-awareness effectiveness \\
+        Routing computation time &
+        Lower &
+        Algorithmic scalability \\
+        Routing-table size &
+        Lower and bounded &
+        Compactness preservation \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+For every experimental configuration, the reported results include the sample mean and, where appropriate, confidence intervals over multiple independent runs.
+\section{Experimental Scenarios}
+The experimental scenarios are designed to evaluate the proposed method under different network sizes, traffic loads, coherence conditions, fidelity requirements, memory capacities, and overlay-maintenance policies.
+
+The experiments are divided into baseline comparison, scalability analysis, temporal-degradation analysis, traffic-load analysis, memory analysis, regeneration analysis, overlay-structure comparison, and sensitivity analysis.
+
+\subsection{Scenario 1: Baseline Routing Comparison}
+
+The first scenario compares the proposed full method with all benchmark routing strategies under a common baseline configuration.
+
+The same physical topology, artificial overlay, request sequence, quantum-memory capacity, generation outcomes, and swapping outcomes are used for every method.
+
+The principal metrics are
+
+\begin{itemize}
+    \item request success ratio;
+    \item average end-to-end fidelity;
+    \item fidelity-violation ratio;
+    \item average completion delay;
+    \item stale-link selection ratio;
+    \item temporal entangling stretch; and
+    \item regeneration overhead.
+\end{itemize}
+
+This scenario determines whether the proposed method provides a balanced improvement over topology-only, fidelity-only, age-only, and reactive-regeneration routing.
+
+\subsection{Scenario 2: Network-Size Scalability}
+
+The second scenario evaluates performance as the number of ESPs increases.
+
+The considered network sizes are
+
+\begin{equation}
+    n
+    \in
+    \left\{
+    20,
+    40,
+    60,
+    80,
+    100
+    \right\}.
+\end{equation}
+
+For each network size, the experiment records
+
+\begin{itemize}
+    \item routing computation time;
+    \item average routing-table size;
+    \item request success ratio;
+    \item average route length;
+    \item memory utilization; and
+    \item temporal stretch.
+\end{itemize}
+
+The traffic load is scaled with the network size so that the comparison does not become biased by a fixed total request count.
+
+\subsection{Scenario 3: Coherence-Time Variation}
+
+The third scenario evaluates robustness under different quantum-memory coherence conditions.
+
+The coherence time is varied across short, medium, and long regimes:
+
+\begin{equation}
+    T_2
+    \in
+    \left\{
+    T_2^{\mathrm{short}},
+    T_2^{\mathrm{medium}},
+    T_2^{\mathrm{long}}
+    \right\}.
+\end{equation}
+
+This scenario examines
+
+\begin{itemize}
+    \item how quickly artificial e-links become critical or expired;
+    \item how often proactive regeneration is triggered;
+    \item whether coherence-budget filtering reduces route failures; and
+    \item how performance changes when memory quality improves.
+\end{itemize}
+
+\subsection{Scenario 4: Traffic-Load Variation}
+
+The fourth scenario varies the average request-arrival rate:
+
+\begin{equation}
+    \lambda_{\mathrm{req}}
+    \in
+    \left\{
+    \lambda_{\mathrm{low}},
+    \lambda_{\mathrm{medium}},
+    \lambda_{\mathrm{high}}
+    \right\}.
+\end{equation}
+
+The measured outcomes include
+
+\begin{itemize}
+    \item request success and rejection ratios;
+    \item average queueing and completion delay;
+    \item deadline violations;
+    \item memory utilization;
+    \item regeneration demand; and
+    \item route-computation time.
+\end{itemize}
+
+This scenario determines whether temporal-state-aware routing remains useful under congestion.
+
+\subsection{Scenario 5: Fidelity-Threshold Variation}
+
+The fifth scenario varies the request-level end-to-end fidelity threshold.
+
+The tested values are represented by
+
+\begin{equation}
+    F_{\min}^{\mathrm{end}}
+    \in
+    \left\{
+    F_{\mathrm{low}},
+    F_{\mathrm{medium}},
+    F_{\mathrm{high}}
+    \right\}.
+\end{equation}
+
+A higher threshold is expected to reduce the feasible-route set and increase regeneration or purification demand.
+
+The experiment evaluates the trade-off between entanglement quality and service availability.
+
+\subsection{Scenario 6: Quantum-Memory Capacity}
+
+The sixth scenario varies the memory capacity available at each ESP:
+
+\begin{equation}
+    M_i
+    \in
+    \left\{
+    M_{\mathrm{small}},
+    M_{\mathrm{medium}},
+    M_{\mathrm{large}}
+    \right\}.
+\end{equation}
+
+This experiment measures
+
+\begin{itemize}
+    \item overlay density;
+    \item request success ratio;
+    \item peak memory utilization;
+    \item number of discarded e-links;
+    \item regeneration success ratio; and
+    \item temporary disconnection caused by memory shortage.
+\end{itemize}
+
+\subsection{Scenario 7: Regeneration-Budget Variation}
+
+The seventh scenario changes the maximum number of regeneration actions permitted per time slot:
+
+\begin{equation}
+    R_{\max}
+    \in
+    \left\{
+    0,
+    R_{\mathrm{low}},
+    R_{\mathrm{medium}},
+    R_{\mathrm{high}}
+    \right\}.
+\end{equation}
+
+The case
+
+\begin{equation}
+    R_{\max}=0
+\end{equation}
+
+represents the regeneration-disabled ablation.
+
+This scenario evaluates whether additional regeneration always improves performance or eventually introduces excessive resource and delay overhead.
+
+\subsection{Scenario 8: Partial-Anchor and Full-Anchor Comparison}
+
+The eighth scenario compares the Partial-Anchor and Full-Anchor overlay structures.
+
+Both configurations use the same physical topology, memory capacity, traffic pattern, and temporal-state parameters.
+
+The comparison focuses on
+
+\begin{itemize}
+    \item routing-table size;
+    \item route length;
+    \item request success ratio;
+    \item temporal stretch;
+    \item stretch-bound violation ratio;
+    \item memory consumption; and
+    \item regeneration overhead.
+\end{itemize}
+
+This scenario determines whether the additional long-range state of the Full-Anchor configuration provides sufficient temporal reliability to justify its resource cost.
+
+\subsection{Scenario 9: Hotspot and Non-Uniform Traffic}
+
+The ninth scenario evaluates non-uniform request patterns.
+
+A subset of ESPs is designated as traffic hotspots. The hotspot probability is varied using
+
+\begin{equation}
+    p_{\mathrm{hot}}
+    \in
+    \left\{
+    0,
+    0.25,
+    0.50,
+    0.75
+    \right\}.
+\end{equation}
+
+The experiment studies whether utilization-aware regeneration and overlay replacement adapt to repeatedly used source--destination regions.
+
+\subsection{Scenario 10: Ablation Analysis}
+
+The ablation study removes one proposed component at a time.
+
+The evaluated variants are
+
+\begin{itemize}
+    \item proposed method without regeneration;
+    \item proposed method without coherence-budget filtering;
+    \item proposed method without consumption-time prediction;
+    \item proposed method without structural importance; and
+    \item proposed method without demand-aware maintenance.
+\end{itemize}
+
+The full proposed method is then compared against every reduced variant.
+
+This experiment identifies which components are responsible for changes in fidelity, delay, success ratio, and regeneration overhead.
+
+\subsection{Scenario 11: Weight Sensitivity}
+
+The route-cost and regeneration-priority weights are varied to determine whether the results depend excessively on one parameter configuration.
+
+The route-cost weights include
+
+\begin{equation}
+    \alpha_F,
+    \alpha_A,
+    \alpha_B,
+    \alpha_R,
+    \alpha_S,
+    \alpha_D,
+    \alpha_Q.
+\end{equation}
+
+The sensitivity study uses
+
+\begin{itemize}
+    \item fidelity-dominant settings;
+    \item coherence-budget-dominant settings;
+    \item delay-dominant settings;
+    \item regeneration-cost-dominant settings; and
+    \item balanced settings.
+\end{itemize}
+
+The purpose is to identify stable parameter regions rather than report results from a single arbitrary weight combination.
+
+\subsection{Scenario 12: Initial-Age Distribution}
+
+The final scenario compares two initial overlay conditions.
+
+In the cold-start condition,
+
+\begin{equation}
+    A_{ij}(0)=0
+\end{equation}
+
+for all artificial e-links.
+
+In the mixed-age condition,
+
+\begin{equation}
+    A_{ij}(0)
+    \sim
+    \mathcal{U}
+    \left(
+    0,
+    A_{\mathrm{init}}^{\max}
+    \right).
+\end{equation}
+
+This scenario determines whether the proposed method remains effective when the initial overlay already contains partially aged entanglement.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Summary of the experimental scenarios.}
+    \label{tab:experimental_scenarios}
+    \begin{tabular}{p{1.2cm} p{4.4cm} p{5.7cm}}
+        \toprule
+        \textbf{No.} &
+        \textbf{Scenario} &
+        \textbf{Primary purpose} \\
+        \midrule
+        1 & Baseline comparison &
+        Compare the proposed method with benchmark routing methods \\
+        2 & Network-size scalability &
+        Evaluate computation, state, and routing scalability \\
+        3 & Coherence-time variation &
+        Measure robustness to memory degradation \\
+        4 & Traffic-load variation &
+        Evaluate performance under congestion \\
+        5 & Fidelity-threshold variation &
+        Study quality--availability trade-offs \\
+        6 & Memory-capacity variation &
+        Evaluate resource limitations \\
+        7 & Regeneration-budget variation &
+        Quantify regeneration benefit and overhead \\
+        8 & Overlay-structure comparison &
+        Compare Partial-Anchor and Full-Anchor schemes \\
+        9 & Hotspot traffic &
+        Test adaptation to non-uniform demand \\
+        10 & Ablation analysis &
+        Isolate the contribution of each proposed component \\
+        11 & Weight sensitivity &
+        Test robustness to metric-weight choices \\
+        12 & Initial-age distribution &
+        Compare fresh and mixed-age starting conditions \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Each experimental configuration is repeated using multiple random seeds and topology instances. All routing methods are evaluated on matched simulation inputs to support statistically fair comparison.
+\section{Parameter Settings}
+The simulation parameters are divided into four groups: network parameters, physical quantum-link parameters, routing parameters, and experimental-control parameters.
+
+The baseline values are selected to provide a practical starting configuration for comparison. These values will later be refined using verified literature sources and sensitivity analysis.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Baseline simulation parameter settings.}
+    \label{tab:simulation_parameters}
+    \small
+    \begin{tabular}{p{4.0cm} p{2.8cm} p{3.6cm}}
+        \toprule
+        \textbf{Parameter} &
+        \textbf{Symbol} &
+        \textbf{Baseline value} \\
+        \midrule
+        Number of ESPs &
+        $n$ &
+        $40$ \\
+        Simulation duration &
+        $T_{\mathrm{sim}}$ &
+        $10{,}000$ slots \\
+        Time-slot duration &
+        $\Delta$ &
+        $1$ ms \\
+        Maximum physical-link distance &
+        $L_{\max}^{\mathrm{phys}}$ &
+        $50$ km \\
+        Reference generation factor &
+        $p_0$ &
+        $0.90$ \\
+        Effective attenuation coefficient &
+        $\alpha$ &
+        Configurable \\
+        Initial elementary fidelity &
+        $F_{ij}^{0}$ &
+        $0.90$--$0.99$ \\
+        Memory coherence time &
+        $T_2$ &
+        $0.1$--$10$ s \\
+        Swapping-success probability &
+        $q_r$ &
+        $0.80$--$0.99$ \\
+        Swapping-retention factor &
+        $\lambda_r$ &
+        $0.90$--$0.99$ \\
+        Memory capacity per ESP &
+        $M_i$ &
+        $10$--$50$ e-bits \\
+        Average request-arrival rate &
+        $\lambda_{\mathrm{req}}$ &
+        $1$--$10$ requests/slot \\
+        Maximum candidate routes &
+        $K_{\max}$ &
+        $5$ \\
+        Maximum overlay hops &
+        $H_{\max}$ &
+        $6$ \\
+        Maximum regeneration actions &
+        $R_{\max}$ &
+        $5$ per slot \\
+        Link-level fidelity threshold &
+        $F_{\min}^{\mathrm{link}}$ &
+        $0.70$ \\
+        End-to-end fidelity threshold &
+        $F_{\min}^{\mathrm{end}}$ &
+        $0.75$ \\
+        Coherence safety margin &
+        $\delta_{\mathrm{safe}}$ &
+        $0.05T_2$ \\
+        Monitoring interval &
+        $\tau_{\mathrm{mon}}$ &
+        $1$ slot \\
+        Maintenance interval &
+        $\tau_{\mathrm{maint}}$ &
+        $10$ slots \\
+        Independent simulation runs &
+        $N_{\mathrm{run}}$ &
+        $30$ \\
+        Confidence level &
+        -- &
+        $95\%$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The time-dependent route-cost weights are initialized using a balanced configuration:
+
+\begin{equation}
+    \alpha_F
+    =
+    0.25,
+    \qquad
+    \alpha_A
+    =
+    0.15,
+    \qquad
+    \alpha_B
+    =
+    0.25,
+\end{equation}
+
+\begin{equation}
+    \alpha_R
+    =
+    0.15,
+    \qquad
+    \alpha_S
+    =
+    0.10,
+    \qquad
+    \alpha_D
+    =
+    0.05,
+    \qquad
+    \alpha_Q
+    =
+    0.05.
+\end{equation}
+
+These values are initial experimental settings rather than theoretically optimal coefficients.
+
+The regeneration-priority weights are initialized as
+
+\begin{equation}
+    \beta_B
+    =
+    0.25,
+    \qquad
+    \beta_F
+    =
+    0.20,
+    \qquad
+    \beta_I
+    =
+    0.20,
+\end{equation}
+
+\begin{equation}
+    \beta_H
+    =
+    0.15,
+    \qquad
+    \beta_Q
+    =
+    0.10,
+    \qquad
+    \beta_R
+    =
+    0.10.
+\end{equation}
+
+A link is classified as safe when
+
+\begin{equation}
+    B_{ij}(t)
+    \geq
+    0.30T_{2,ij}
+\end{equation}
+
+and
+
+\begin{equation}
+    \widehat{F}_{ij}^{\mathrm{cons}}(t)
+    \geq
+    0.85.
+\end{equation}
+
+A warning-state link satisfies
+
+\begin{equation}
+    0.10T_{2,ij}
+    \leq
+    B_{ij}(t)
+    <
+    0.30T_{2,ij}.
+\end{equation}
+
+A link is classified as critical when
+
+\begin{equation}
+    0
+    <
+    B_{ij}(t)
+    <
+    0.10T_{2,ij}
+\end{equation}
+
+or when its predicted fidelity approaches the minimum link-level threshold.
+
+The default number of independent runs is
+
+\begin{equation}
+    N_{\mathrm{run}}
+    =
+    30.
+\end{equation}
+
+Each run uses a different random seed, while all compared routing methods receive identical seeds within the same matched experiment.
+
+The confidence interval for a measured quantity $X$ is reported as
+
+\begin{equation}
+    \overline{X}
+    \pm
+    t_{\gamma/2,N_{\mathrm{run}}-1}
+    \frac{
+    s_X
+    }{
+    \sqrt{N_{\mathrm{run}}}
+    },
+\end{equation}
+
+where $t_{\gamma/2,N_{\mathrm{run}}-1}$ is the Student's $t$ critical value.
+
+The values in Table~\ref{tab:simulation_parameters} are baseline settings. The experimental scenarios vary one or more parameters while holding the remaining parameters constant.
+
+Before final publication, every numerical value will be checked against recent quantum-networking literature or clearly labeled as a simulation assumption.
+\section{Implementation Procedure}
+The simulation implementation follows a modular procedure so that the physical network, artificial overlay, routing methods, and experimental parameters can be modified independently.
+
+The implementation is divided into six principal modules:
+
+\begin{enumerate}
+    \item topology-generation module;
+    \item artificial-overlay module;
+    \item temporal-state update module;
+    \item request and traffic module;
+    \item routing and regeneration module; and
+    \item result-collection module.
+\end{enumerate}
+
+\subsection{Project Organization}
+
+The simulation project is organized using the following directory structure:
+
+\begin{verbatim}
+quantum-routing-simulation/
+|
+|-- config/
+|   |-- baseline.yaml
+|   |-- experiments.yaml
+|
+|-- src/
+|   |-- topology.py
+|   |-- overlay.py
+|   |-- temporal_state.py
+|   |-- traffic.py
+|   |-- routing.py
+|   |-- regeneration.py
+|   |-- metrics.py
+|   |-- simulator.py
+|
+|-- experiments/
+|   |-- run_baseline.py
+|   |-- run_scalability.py
+|   |-- run_sensitivity.py
+|
+|-- results/
+|   |-- raw/
+|   |-- processed/
+|   |-- figures/
+|
+|-- notebooks/
+|   |-- analysis.ipynb
+|
+|-- requirements.txt
+|-- README.md
+\end{verbatim}
+
+The configuration files store all adjustable parameters, including topology size, coherence time, request rate, fidelity threshold, memory capacity, route-cost weights, and random seeds.
+
+\subsection{Topology Initialization}
+
+The topology module generates or imports the physical quantum network.
+
+For every ESP and physical link, the module stores:
+
+\begin{itemize}
+    \item node identifier and coordinates;
+    \item physical adjacency;
+    \item physical-link distance;
+    \item generation probability;
+    \item initial fidelity;
+    \item coherence time; and
+    \item swapping and coordination parameters.
+\end{itemize}
+
+Disconnected topology instances are rejected or repaired before an experiment begins.
+
+\subsection{Artificial-Overlay Initialization}
+
+The overlay module constructs either the Partial-Anchor or Full-Anchor structure.
+
+It performs the following operations:
+
+\begin{enumerate}
+    \item selects anchor or tracked nodes;
+    \item identifies physical paths for artificial e-link generation;
+    \item verifies endpoint memory availability;
+    \item creates the initial artificial e-links;
+    \item assigns initial fidelity and age; and
+    \item initializes compact routing-table entries.
+\end{enumerate}
+
+The initial topology and overlay are saved so that all benchmark methods can use identical network conditions.
+
+\subsection{Temporal-State Update}
+
+At the beginning of every simulation slot, the temporal-state module updates each stored artificial e-link.
+
+The update includes:
+
+\begin{itemize}
+    \item increasing the e-link age;
+    \item computing current effective fidelity;
+    \item predicting consumption-time fidelity;
+    \item calculating remaining coherence budget;
+    \item updating utilization history; and
+    \item assigning the safe, warning, critical, or expired state.
+\end{itemize}
+
+Expired links are removed from the usable overlay. Critical links are transferred to the regeneration-candidate set.
+
+\subsection{Request Processing}
+
+The traffic module generates new entanglement requests according to the selected arrival process.
+
+For each request, the simulator:
+
+\begin{enumerate}
+    \item selects source and destination ESPs;
+    \item assigns fidelity and delay requirements;
+    \item constructs compact candidate routes;
+    \item applies temporal-feasibility filtering;
+    \item calculates route costs;
+    \item reserves the required e-bits; and
+    \item executes the selected swapping sequence.
+\end{enumerate}
+
+Requests that cannot be served immediately are either transferred to the waiting queue, assigned a repairable route, or rejected when their deadline expires.
+
+\subsection{Regeneration and Overlay Maintenance}
+
+After request processing, the regeneration module evaluates critical artificial e-links.
+
+The module ranks candidates using temporal risk, structural importance, recent utilization, expected demand, and regeneration cost.
+
+The selected actions are limited by:
+
+\begin{itemize}
+    \item available endpoint memory;
+    \item physical generation capacity;
+    \item maximum regeneration operations per slot; and
+    \item request deadlines.
+\end{itemize}
+
+Successful regeneration resets the e-link age and fidelity state. Failed regeneration is recorded and handled according to the selected replacement policy.
+
+\subsection{Metric Collection}
+
+At the end of every simulation slot, the metrics module records:
+
+\begin{itemize}
+    \item generated, served, queued, and rejected requests;
+    \item realized end-to-end fidelity;
+    \item completion and queueing delays;
+    \item selected route length and cost;
+    \item stale-link selections;
+    \item regeneration attempts and outcomes;
+    \item memory utilization;
+    \item routing-table size; and
+    \item route-computation time.
+\end{itemize}
+
+Raw slot-level data are stored separately from processed summary data.
+
+\subsection{Matched Experimental Runs}
+
+A master random seed is used to generate the topology, request sequence, generation outcomes, and swapping outcomes.
+
+For a fair comparison, every routing method receives the same input realization during a matched run.
+
+The experimental procedure is:
+
+\begin{enumerate}
+    \item generate one topology and request sequence;
+    \item save the complete input realization;
+    \item execute every routing method using that realization;
+    \item collect method-specific outputs;
+    \item repeat the process using additional random seeds; and
+    \item aggregate the results using means and confidence intervals.
+\end{enumerate}
+
+\subsection{Validation and Debugging}
+
+Before running large experiments, the implementation is validated using small deterministic topologies.
+
+The validation tests include:
+
+\begin{itemize}
+    \item correct shortest-path and candidate-route construction;
+    \item correct e-link age updates;
+    \item monotonic fidelity degradation during storage;
+    \item correct coherence-budget classification;
+    \item prevention of duplicate e-bit allocation;
+    \item correct memory release after consumption;
+    \item correct request-deadline handling; and
+    \item reproducible output under a fixed random seed.
+\end{itemize}
+
+Figure~\ref{fig:implementation_pipeline} summarizes the implementation pipeline.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        node distance=1.25cm,
+        block/.style={
+            rectangle,
+            rounded corners,
+            draw,
+            align=center,
+            minimum width=5.0cm,
+            minimum height=0.8cm
+        },
+        arrow/.style={->, thick}
+    ]
+
+    \node[block] (config) {Load Configuration and Random Seed};
+    \node[block, below of=config] (network) {Generate Physical Network and Overlay};
+    \node[block, below of=network] (state) {Initialize Memory and Temporal E-Link States};
+    \node[block, below of=state] (loop) {Execute Time-Slotted Simulation Loop};
+    \node[block, below of=loop] (metrics) {Store Raw Metrics and Event Logs};
+    \node[block, below of=metrics] (analysis) {Aggregate Results and Generate Figures};
+
+    \draw[arrow] (config) -- (network);
+    \draw[arrow] (network) -- (state);
+    \draw[arrow] (state) -- (loop);
+    \draw[arrow] (loop) -- (metrics);
+    \draw[arrow] (metrics) -- (analysis);
+
+    \end{tikzpicture}
+    \caption{Implementation pipeline for the simulation and experimental evaluation.}
+    \label{fig:implementation_pipeline}
+\end{figure}
+
+This modular implementation procedure supports reproducible experiments, systematic debugging, baseline comparison, ablation analysis, and later extension to more detailed quantum-network simulators.
+\section{Chapter Summary}
+This chapter presented the simulation methodology and experimental setup for evaluating the proposed temporal-state-aware compact routing method.
+
+The simulation was designed as a discrete-event and time-slotted Python-based framework. The implementation uses graph-processing, numerical-computation, data-analysis, and visualization tools to model physical quantum links, artificial e-links, memory occupation, entanglement generation, decoherence, swapping, routing requests, and overlay-maintenance actions.
+
+Multiple physical network structures were considered, including random connected, grid-based, and small-world topologies. The topology-generation procedure preserves connectivity and records all parameters and random seeds for reproducibility.
+
+The physical and quantum-link models included distance-dependent generation probability, initial fidelity, coherence time, swapping-success probability, coordination delay, and generation delay. These values were explicitly treated as configurable simulation assumptions and will be refined using verified literature sources.
+
+The artificial overlay was configured using Partial-Anchor and Full-Anchor structures. The overlay initialization included anchor or tracked-link selection, physical-path identification, memory verification, initial e-link generation, age assignment, and compact routing-table construction.
+
+A traffic model was defined using configurable request-arrival rates, source--destination selection, service classes, fidelity requirements, pair-demand sizes, and completion deadlines. Uniform and hotspot traffic patterns were included.
+
+The proposed method was compared with shortest-hop, static entangling-cost, fidelity-only, age-only, current-fidelity-aware, reactive-regeneration, and multiple ablation variants. All methods use matched topologies, traffic sequences, random seeds, generation outcomes, and resource constraints.
+
+The evaluation metrics include request success ratio, rejection ratio, temporal disconnection ratio, end-to-end fidelity, fidelity violations, completion delay, deadline violations, route length, temporal entangling stretch, stretch-bound violations, regeneration overhead, memory utilization, stale-link selection, routing computation time, and routing-table size.
+
+Twelve experimental scenarios were defined to examine baseline performance, scalability, coherence-time sensitivity, traffic load, fidelity thresholds, memory capacity, regeneration budget, overlay structure, hotspot traffic, component ablation, weight sensitivity, and initial e-link age.
+
+Finally, the chapter described the implementation workflow, directory structure, simulation modules, matched-run methodology, validation tests, data storage, and reproducibility procedure.
+
+The next chapter presents the experimental results, comparative analysis, interpretation of findings, sensitivity analysis, and discussion of the proposed method's limitations.

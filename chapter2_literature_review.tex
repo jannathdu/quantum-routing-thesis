@@ -1,0 +1,1404 @@
+\chapter{Literature Review}
+
+\section{Introduction}
+
+This chapter reviews the theoretical and technical foundations required for temporal-state-aware compact routing in quantum networks. The discussion begins with the basic principles of quantum communication, including qubits, entanglement, quantum memories, entanglement swapping, purification, and probabilistic link generation. These concepts are essential because routing in a quantum network differs fundamentally from routing in a classical packet-switched network.
+
+The review then examines existing approaches to entanglement distribution and quantum network routing. Particular attention is given to fidelity-aware routing, decoherence-aware control, adaptive scheduling, and resource-constrained repeater networks. These research areas establish that route quality depends not only on connectivity, but also on the physical quality and temporal condition of the entangled resources used along a route.
+
+Recent studies have introduced explicit temporal metrics for quantum networks, including pair age, Fidelity-Age, and Age of Entanglement \cite{ercetin2026fidelityage,ceran2026age}. These metrics capture the fact that stored entanglement degrades over time and that delayed delivery may reduce application-level usefulness. However, most age-aware studies focus on scheduling, repeater chains, or local control policies rather than scalable quantum-native compact routing.
+
+In parallel, quantum-native routing architectures have introduced artificial entanglement overlays, quantum addressing, compact routing tables, and bounded entangling stretch. The proposed architecture in \cite{caleffi2025quantumarchitecture} demonstrates how Partial-Anchor and Full-Anchor schemes can achieve sublinear routing-table growth while preserving constant stretch. Nevertheless, the temporal state of individual artificial e-links is not explicitly represented in the routing table or in the stretch analysis.
+
+Therefore, this literature review focuses on the intersection of two previously separate research directions: temporal entanglement management and scalable compact routing. The objective is to identify whether age, effective fidelity, remaining coherence budget, and regeneration delay can be incorporated into a quantum-native compact routing framework without destroying its scalability properties.
+
+\section{Fundamentals of Quantum Networks}
+Quantum networks extend classical communication infrastructures by enabling the generation, storage, distribution, and manipulation of quantum states across spatially separated nodes. Their operation relies on physical principles that have no direct classical counterpart, including quantum superposition, entanglement, measurement-induced state collapse, and the no-cloning theorem. These principles fundamentally constrain how information can be transmitted and how network resources must be managed.
+\cite{kimble2008quantum,wehner2018vision}
+A qubit is the basic unit of quantum information and can be represented as
+
+\begin{equation}
+    |\psi\rangle = \alpha |0\rangle + \beta |1\rangle,
+\end{equation}
+
+where $\alpha$ and $\beta$ are complex probability amplitudes satisfying
+
+\begin{equation}
+    |\alpha|^2 + |\beta|^2 = 1.
+\end{equation}
+
+Unlike a classical bit, which takes either the value 0 or 1, a qubit may exist in a coherent superposition of both basis states until measurement.
+
+Quantum entanglement is a non-classical correlation shared between two or more quantum systems. A widely used example is the Bell state
+
+\begin{equation}
+    |\Phi^{+}\rangle =
+    \frac{1}{\sqrt{2}}
+    \left(
+    |00\rangle + |11\rangle
+    \right).
+\end{equation}
+
+The two qubits in this state cannot be described independently, even when they are stored at distant nodes. This property makes entanglement a fundamental communication resource for quantum teleportation, distributed quantum computing, quantum sensing, and quantum key distribution \cite{kimble2008quantum,wehner2018vision}.
+Direct entanglement distribution over long distances is strongly limited by photon loss, channel noise, and imperfect hardware \cite{briegel1998quantum,pant2019routing} Quantum repeaters are therefore introduced to divide a long communication path into shorter elementary links. Entanglement is first generated between neighboring nodes and then extended over multiple links through entanglement swapping. If two adjacent entangled pairs are available, an intermediate repeater can perform a Bell-state measurement to establish entanglement between the remote end nodes.
+
+The quality of an entangled stThe quality of an entangled state is commonly measured using fidelity \cite{briegel1998quantum,halder2024optimal}.ate is commonly measured using fidelity. For a quantum state described by density matrix $\rho$ and a target pure state $|\psi_{\mathrm{tar}}\rangle$, fidelity is defined as
+
+\begin{equation}
+    F =
+    \langle
+    \psi_{\mathrm{tar}}
+    |
+    \rho
+    |
+    \psi_{\mathrm{tar}}
+    \rangle.
+\end{equation}
+
+A high fidelity value indicates that the generated state is close to the intended target state. In practical quantum networks, fidelity decreases due to channel noise, imperfect gates, measurement errors, and storage-induced decoherence.
+
+Quantum memories temporarily store entangled qubits until other links or operations become available \cite{vanmeter2014quantum,wehner2018vision} However, stored states are not persistent resources. Their quality deteriorates over time because of decoherence, and an entangled pair may eventually become unusable if its fidelity falls below an application-specific threshold. Consequently, quantum-network control must account not only for whether an entangled pair exists, but also for its current physical and temporal condition.
+
+Entanglement purification can improve fidelity by consuming multiple low-quality entangled pairs to probabilistically produce a smaller number of higher-quality pairs. This creates an important trade-off between fidelity improvement and resource consumption. Similarly, entanglement swapping extends communication distance but may reduce end-to-end fidelity and introduces additional probabilistic failure.
+
+These characteristics make quantum networking fundamentally stateful. Routing and resource-allocation decisions must consider link-generation probability, memory occupancy, fidelity, decoherence, swapping success, purification cost, and the age of stored entanglement. This statefulness motivates the temporal-state-aware routing framework developed in this thesis.
+\section{Entanglement Distribution in Quantum Repeater Networks}
+Entanglement distribution is the process of establishing shared entangled states between spatially separated quantum nodes \cite{briegel1998quantum,wehner2018vision} In a practical quantum network, direct end-to-end entanglement generation becomes increasingly difficult as the communication distance grows because optical loss, imperfect photon transmission, detector inefficiency, and hardware noise reduce the probability of successful link establishment.
+
+To overcome these limitations, a long communication path is divided into a sequence of shorter elementary links connected through quantum repeaters \cite{briegel1998quantum,pant2019routing} Entanglement is first generated independently over each elementary link. After adjacent links have successfully established entangled pairs, intermediate repeater nodes perform entanglement swapping to extend the entanglement over a longer distance.
+
+Let the quantum network be represented by an undirected graph \cite{pant2019routing,lee2022router}.
+
+\begin{equation}
+    G = (V,E),
+\end{equation}
+
+where $V$ denotes the set of quantum nodes and $E$ denotes the set of physical quantum links. For an elementary link $e \in E$, the outcome of an entanglement-generation attempt in time slot $t$ may be modeled as
+
+\begin{equation}
+    X_t(e) \sim \mathrm{Bernoulli}\left(p_e\right),
+\end{equation}
+
+where $p_e$ is the probability of successfully generating an entangled pair over link $e$.
+
+When multiple transmission modes are available, the probability that at least one entangled pair is successfully generated over a link can be expressed as
+
+\begin{equation}
+    p_{\mathrm{link}}(e)
+    =
+    1-
+    \left(
+    1-p_e
+    \right)^{S(e)},
+\end{equation}
+
+where $S(e)$ denotes the number of parallel generation attempts or transmission modes allocated to the link.
+
+Consider an end-to-end path
+
+\begin{equation}
+    \pi =
+    \left(
+    e_1,e_2,\ldots,e_k
+    \right),
+\end{equation}
+
+consisting of $k$ elementary links. If each elementary link is available and each intermediate Bell-state measurement succeeds independently with probability $q$, the approximate end-to-end entanglement-success probability is
+
+\begin{equation}
+    P_{\mathrm{e2e}}(\pi)
+    =
+    \left(
+    \prod_{j=1}^{k}
+    p_{\mathrm{link}}(e_j)
+    \right)
+    q^{k-1}.
+\end{equation}
+
+This expression illustrates why longer paths are generally less reliable. As the number of links increases, more elementary-link generations and swapping operations must succeed simultaneously.
+
+Entanglement swapping is essential for extending the communication distance. Suppose node $B$ shares an entangled pair with node $A$ and another entangled pair with node $C$. By performing a Bell-state measurement on its local qubits, node $B$ can establish entanglement between $A$ and $C$. The original elementary pairs are consumed during this operation, demonstrating that entanglement is a non-persistent network resource.
+
+The quality of the resulting end-to-end entangled state depends on the fidelities of all elementary pairs and the errors introduced by swapping operations. For Werner-state approximations, a transformed parameter may be used to compose link fidelities along a path. If
+
+\begin{equation}
+    p_{W,e}
+    =
+    \frac{4F_e-1}{3},
+\end{equation}
+
+then the end-to-end Werner parameter for a path can be approximated by
+
+\begin{equation}
+    p_{W,\mathrm{end}}
+    =
+    \prod_{e \in \pi}
+    p_{W,e},
+\end{equation}
+
+and the resulting end-to-end fidelity becomes
+
+\begin{equation}
+    F_{\mathrm{end}}
+    =
+    \frac{1+3p_{W,\mathrm{end}}}{4}.
+\end{equation}
+
+A delivered entangled state is considered usable only when
+
+\begin{equation}
+    F_{\mathrm{end}}
+    \geq
+    F_{\min},
+\end{equation}
+
+where $F_{\min}$ is an application-specific fidelity threshold.
+
+Quantum memories allow successfully generated elementary pairs to be stored while the network waits for other links to become available. However, storage introduces a temporal dependency because the fidelity of stored entanglement decreases due to decoherence. Therefore, two links that are simultaneously available may have different ages and different effective fidelities.
+
+Entanglement purification may be applied when the fidelity of available pairs is insufficient. Purification consumes two or more imperfect entangled pairs and probabilistically produces a smaller number of higher-fidelity pairs. Although purification improves quality, it also increases resource consumption, memory occupancy, and delivery delay.
+
+Consequently, entanglement distribution involves several coupled decisions, including which links should attempt generation, which pairs should be stored or discarded, where purification should be performed, when swapping should occur, and which end-to-end path should be selected. These decisions directly influence throughput, fidelity, latency, resource consumption, and entanglement freshness.
+
+In quantum-native overlay architectures, proactively established entanglement creates artificial links between nodes that may not be physically adjacent. These artificial links can reduce distribution delay and routing complexity, but they must be continuously monitored, replenished, and reconfigured because they are consumed during use and degraded by decoherence \cite{caleffi2025quantumarchitecture}. This motivates the need for routing methods that consider both the structural role and temporal condition of each entangled link.
+\section{Quantum Network Routing}
+Quantum network routing determines how entanglement should be established between remote source and destination nodes through a sequence of physical or artificial links. Unlike classical routing, the objective is not merely to forward packets through a connected topology. Instead, the routing process must identify and coordinate a sequence of entanglement-generation, storage, purification, and swapping operations capable of producing an end-to-end entangled state of sufficient quality \cite{pant2019routing,lee2022router,halder2024optimal}..
+\cite{pant2019routing,lee2022router,halder2024optimal}
+A routing path between source node $s$ and destination node $d$ may be represented as
+
+\begin{equation}
+    \pi_{s,d}
+    =
+    \left(
+    v_0=s,
+    v_1,
+    \ldots,
+    v_k=d
+    \right),
+\end{equation}
+
+where consecutive nodes are connected through physical or pre-established entanglement links.
+
+In classical networks, routing cost is commonly based on hop count, delay, bandwidth, or packet-loss probability. In quantum networks, routing decisions must additionally consider quantum-specific resources \cite{halder2024optimal,wang2024fidelity}.
+\begin{itemize}
+    \item elementary-link generation probability,
+    \item quantum-memory availability,
+    \item storage time and decoherence,
+    \item link and end-to-end fidelity,
+    \item entanglement-swapping reliability,
+    \item purification requirements,
+    \item resource consumption, and
+    \item the age of stored entanglement.
+\end{itemize}
+
+A generic quantum-routing problem may be expressed as
+
+\begin{equation}
+    \pi_{s,d}^{*}
+    =
+    \arg\min_{\pi \in \mathcal{P}_{s,d}}
+    C(\pi),
+\end{equation}
+
+where $\mathcal{P}_{s,d}$ is the set of feasible paths between $s$ and $d$, and $C(\pi)$ is a quantum-specific route-cost function \cite{pant2019routing,halder2024optimal}.
+
+Early quantum-routing approaches adapted classical shortest-path algorithms by assigning quantum-aware weights to physical links. A simple additive path cost can be written as
+
+\begin{equation}
+    C(\pi)
+    =
+    \sum_{e \in \pi}
+    w(e),
+\end{equation}
+
+where $w(e)$ may reflect distance, generation delay, memory consumption, fidelity loss, or another link-level property. Although this formulation is computationally convenient, it may be insufficient when route quality depends on multiplicative success probabilities or non-additive fidelity composition.
+
+For example, if link-generation and swapping events are independent, an end-to-end success-oriented route may be selected by maximizing
+
+\begin{equation}
+    P_{\mathrm{e2e}}(\pi)
+    =
+    \left(
+    \prod_{e \in \pi}
+    p_{\mathrm{link}}(e)
+    \right)
+    \left(
+    \prod_{r \in \pi}
+    q_r
+    \right),
+\end{equation}
+
+where $q_r$ denotes the swapping-success probability at repeater $r$. By applying a negative logarithm, this multiplicative objective can be transformed into an additive routing cost.
+
+Fidelity-aware routing explicitly selects paths according to the quality of the expected end-to-end entangled state. A path is feasible only if
+
+\begin{equation}
+    F_{\mathrm{end}}(\pi)
+    \geq
+    F_{\min}.
+\end{equation}
+
+Among feasible paths, a routing protocol may maximize expected fidelity, minimize purification cost, maximize delivery rate, or balance multiple objectives. However, a route with high initial fidelity may become unsuitable if the required entangled pairs remain in memory for too long.
+
+Reactive routing computes or updates a path after a demand arrives, whereas proactive routing creates and maintains entanglement resources before requests are received. Reactive approaches may reduce idle resource consumption but introduce setup delay. Proactive approaches can reduce service latency by maintaining pre-established entanglement, but they require continuous memory allocation, monitoring, and regeneration.
+
+Adaptive routing responds to changes in link state, memory availability, noise, fidelity, and request load. Recent approaches formulate the routing process as a Markov decision process, partially observable Markov decision process, or reinforcement-learning problem. In these models, the controller selects actions based on the current or estimated network state rather than relying on a fixed link metric.
+
+Routing becomes especially challenging when multiple source--destination requests compete for the same stored entangled pairs. Since each pair can be consumed by at most one swapping or purification operation, path selection must be coordinated with scheduling and resource allocation. Therefore, routing and scheduling cannot always be treated as independent layers.
+
+Quantum-native routing introduces a further conceptual shift by operating over an artificial topology formed by pre-established entanglement. In this setting, an artificial link may connect physically remote nodes and can be consumed through entanglement swapping. The routing table therefore stores information about currently available entangled resources rather than only physical next hops.
+
+The quantum-native compact-routing architecture in \cite{caleffi2025quantumarchitecture} defines a general entangling-cost metric $w(i,j)$ and uses it to select e-neighbors, anchors, and artificial entanglement paths. The framework supports a wide class of possible metrics, including fidelity, memory usage, and decoherence-related cost. Nevertheless, the proposed routing-table structure does not explicitly track the temporal state of each stored e-link.
+
+This limitation is important because the same artificial link may have different routing value at different times. A recently generated link with high effective fidelity and sufficient remaining coherence may be preferable to an older link with lower generation cost. Consequently, routing decisions should consider not only static structural connectivity but also time-dependent entanglement usability.
+\section{Noise, Decoherence, and Fidelity Degradation}
+
+Noise and decoherence are fundamental limitations in practical quantum networks. Unlike classical information, quantum states are highly sensitive to environmental interaction, imperfect control operations, photon loss, detector errors, and finite memory coherence. These effects reduce the quality and reliability of distributed entanglement and therefore directly influence routing and resource-allocation decisions \cite{briegel1998quantum,wehner2018vision}.
+
+Quantum noise can arise from several physical mechanisms. Common models include depolarizing noise, dephasing, amplitude damping, gate errors, and measurement errors \cite{pirandola2020advances,vanmeter2014quantum}. Although these models differ physically, their common consequence is a reduction in the fidelity of the stored or transmitted quantum state.
+
+For an ideal target state $|\psi_{\mathrm{tar}}\rangle$ and an actual density matrix $\rho$, fidelity is defined as
+
+\begin{equation}
+    F =
+    \langle
+    \psi_{\mathrm{tar}}
+    |
+    \rho
+    |
+    \psi_{\mathrm{tar}}
+    \rangle.
+\end{equation}
+
+The value of $F$ lies between zero and one, with larger values indicating that the actual state is closer to the target state. In entanglement-distribution systems, fidelity is commonly used as the main quality metric for determining whether an entangled pair is suitable for communication tasks \cite{pant2019routing,halder2024optimal}.
+
+A practical application usually imposes a minimum acceptable fidelity threshold:
+
+\begin{equation}
+    F \geq F_{\min}.
+\end{equation}
+
+An entangled pair whose fidelity falls below $F_{\min}$ is treated as unusable, even if the pair still physically exists in quantum memory.
+
+One important source of degradation is memory decoherence. When an entangled pair is stored, its quality decreases as a function of storage duration. Quantum memories therefore introduce a temporal dependency into entanglement management because stored resources gradually lose their usefulness over time \cite{vanmeter2014quantum,ercetin2026fidelityage}. A simplified exponential decay model may be written as
+
+\begin{equation}
+    F_{ij}(t)
+    =
+    F_{ij}^{0}
+    \exp
+    \left(
+    -\frac{A_{ij}(t)}{T_{2,ij}}
+    \right),
+\end{equation}
+
+where $F_{ij}^{0}$ is the initial fidelity of the pair shared by nodes $i$ and $j$, $A_{ij}(t)$ is its age at time $t$, and $T_{2,ij}$ is the corresponding coherence time.
+
+This model captures the basic principle that older entangled pairs generally have lower effective fidelity. More detailed physical models may include dephasing, amplitude damping, correlated noise, or hardware-specific memory behavior.
+
+For Werner-state approximations, the fidelity may instead be represented through the Werner parameter
+
+\begin{equation}
+    p_{W}
+    =
+    \frac{4F-1}{3}.
+\end{equation}
+
+Under storage-induced decoherence, this parameter may evolve according to
+
+\begin{equation}
+    p_{W}(t+\Delta)
+    =
+    p_{W}(t)
+    \exp
+    \left(
+    -\frac{\Delta}{T_2}
+    \right).
+\end{equation}
+
+The resulting fidelity can then be recovered using
+
+\begin{equation}
+    F(t)
+    =
+    \frac{1+3p_W(t)}{4}.
+\end{equation}
+
+Noise also accumulates during entanglement swapping. If multiple elementary pairs are combined along a path, the final end-to-end state depends on the fidelity of every stored pair and the reliability of each Bell-state measurement. Therefore, a path that is feasible at the beginning of a time slot may become infeasible after waiting, additional generation delay, or repeated swapping attempts \cite{briegel1998quantum,pant2019routing}.
+
+Purification can partially compensate for fidelity degradation. However, purification consumes multiple entangled pairs and succeeds only probabilistically. As a result, it introduces a trade-off between fidelity improvement, memory usage, throughput, and delay \cite{briegel1998quantum}.
+
+The temporal effect of decoherence is particularly important for proactive entanglement overlays. Artificial e-links may be generated in advance and stored until they are needed. During this waiting period, their effective fidelity decreases. Consequently, the routing value of an e-link is not static but changes with its temporal condition \cite{caleffi2025quantumarchitecture,ercetin2026fidelityage}.
+
+A more realistic time-dependent link state can therefore be represented as
+
+\begin{equation}
+    \mathcal{L}_{ij}(t)
+    =
+    \left[
+    F_{ij}^{0},
+    A_{ij}(t),
+    F_{ij}^{\mathrm{eff}}(t),
+    T_{2,ij}
+    \right].
+\end{equation}
+
+The effective fidelity may be modeled as
+
+\begin{equation}
+    F_{ij}^{\mathrm{eff}}(t)
+    =
+    f
+    \left(
+    F_{ij}^{0},
+    A_{ij}(t),
+    T_{2,ij},
+    \eta_{ij},
+    \epsilon_{ij}
+    \right),
+\end{equation}
+
+where $\eta_{ij}$ and $\epsilon_{ij}$ represent channel and operational noise parameters.
+
+Existing quantum-native compact-routing work allows the entangling-cost metric to represent fidelity degradation, memory use, or decoherence abstractly \cite{caleffi2025quantumarchitecture}. However, it does not provide an explicit temporal-state model or derive how age-dependent fidelity affects route feasibility and entangling stretch.
+
+This gap motivates the development of a routing framework in which each artificial e-link is evaluated according to its current effective fidelity, age, and remaining coherence budget rather than by static connectivity alone \cite{ercetin2026fidelityage,ceran2026age}.
+
+\section{Temporal State of Entanglement}
+
+The temporal state of entanglement describes how the usefulness of a stored entangled resource changes over time. Unlike classical links, an entangled link is not a persistent resource. Its fidelity may decrease during storage, it may expire after a finite coherence interval, and it is consumed when used in swapping, purification, or application-level delivery.
+
+For an entangled pair generated between nodes $i$ and $j$ at time $t_{ij}^{\mathrm{gen}}$, its age at time $t$ can be defined as
+
+\begin{equation}
+    A_{ij}(t)
+    =
+    t-t_{ij}^{\mathrm{gen}}.
+\end{equation}
+
+A newly generated pair has a small age, whereas a pair that has remained in quantum memory for several slots has a larger age. Since decoherence accumulates during storage, age provides an indirect indicator of the physical quality of the pair \cite{ercetin2026fidelityage,ceran2026age}.
+
+However, age and fidelity are not identical. Two pairs with the same age may have different fidelities because of differences in initial fidelity, coherence time, channel noise, or hardware quality. Therefore, a temporal-state model should combine age with physical parameters rather than using age alone.
+
+A basic temporal link state may be expressed as
+
+\begin{equation}
+    \mathcal{L}_{ij}(t)
+    =
+    \left[
+    A_{ij}(t),
+    F_{ij}^{0},
+    F_{ij}^{\mathrm{eff}}(t),
+    T_{2,ij}
+    \right],
+\end{equation}
+
+where $F_{ij}^{0}$ is the initial fidelity, $F_{ij}^{\mathrm{eff}}(t)$ is the current effective fidelity, and $T_{2,ij}$ is the memory coherence time.
+
+A stored pair remains usable only while its effective fidelity satisfies
+
+\begin{equation}
+    F_{ij}^{\mathrm{eff}}(t)
+    \geq
+    F_{\min}.
+\end{equation}
+
+This condition induces a finite usability interval. Once the pair is expected to fall below the required threshold, it should be discarded, purified, regenerated, or excluded from candidate routes \cite{pant2019routing,halder2024optimal}.
+
+A useful quantity for routing is the remaining coherence budget. It may be approximated as
+
+\begin{equation}
+    B_{ij}(t)
+    =
+    T_{2,ij}
+    -
+    A_{ij}(t)
+    -
+    \widehat{D}_{ij},
+\end{equation}
+
+where $\widehat{D}_{ij}$ denotes the expected additional delay required before the entangled link is consumed in an end-to-end operation.
+
+The value $B_{ij}(t)$ estimates whether the stored resource is likely to remain usable until route completion. A negative or very small coherence budget indicates a high risk of expiration before the required swapping or delivery operations are completed. Such temporal constraints motivate routing strategies that jointly consider resource age, fidelity, and future operation delay \cite{ercetin2026fidelityage}.
+
+Temporal freshness has also been studied at the flow level. Fidelity-Age measures the time elapsed since the most recent delivery of an entangled pair whose fidelity exceeds a prescribed threshold. For a source--destination request $(s,d)$, it can be represented as
+
+\begin{equation}
+    A_{s,d}(t)
+    =
+    t
+    -
+    \max
+    \left\{
+    t_n^{(s,d)}
+    \leq t
+    \right\},
+\end{equation}
+
+where $t_n^{(s,d)}$ denotes a successful usable-delivery epoch.
+
+This flow-level metric differs from pair age. Pair age describes the current storage duration of an individual entangled resource, whereas Fidelity-Age describes how long a flow has waited since its last usable delivery \cite{ercetin2026fidelityage}.
+
+Another related concept is the Age of Entanglement of an end-to-end link. In repeater-chain models, the age may reset after successful swapping according to the accumulated ages of the elementary links used to create the end-to-end state. This captures the fact that a newly established end-to-end pair may already contain storage-induced degradation inherited from its component links \cite{ceran2026age}.
+These temporal quantities can therefore be classified into three levels:
+
+\begin{itemize}
+    \item \textbf{pair age}, describing the age of an individual stored Bell pair;
+    \item \textbf{flow-level age}, describing the time since the last usable delivery for a request; and
+    \item \textbf{end-to-end entanglement age}, describing the freshness of the most recently generated remote entangled state.
+\end{itemize}
+
+These different temporal metrics provide complementary views of entanglement freshness and have recently been considered for adaptive scheduling and resource management in quantum networks \cite{ercetin2026fidelityage,ceran2026age}.
+
+For compact routing over artificial entanglement overlays, pair-level or e-link-level temporal state is particularly important. The routing protocol must determine whether each stored artificial link will remain usable throughout the expected route-completion interval.
+
+A temporally feasible route $\pi$ may therefore be required to satisfy
+
+\begin{equation}
+    B_{ij}(t) > 0,
+    \qquad
+    \forall (i,j)\in\pi.
+\end{equation}
+
+Alternatively, feasibility may be expressed as
+
+\begin{equation}
+    F_{ij}^{\mathrm{eff}}
+    \left(
+    t+\widehat{D}_{\pi}
+    \right)
+    \geq
+    F_{\min},
+    \qquad
+    \forall (i,j)\in\pi,
+\end{equation}
+
+where $\widehat{D}_{\pi}$ is the predicted completion delay of the selected route.
+
+This perspective changes routing from a static connectivity problem into a time-dependent resource-selection problem. A route may be topologically available but temporally infeasible because one or more e-links are too old or too close to expiration. Therefore, future route quality depends not only on current link availability but also on the expected evolution of quantum resources during execution \cite{pant2019routing,halder2024optimal}.
+
+The quantum-native compact-routing architecture in \cite{caleffi2025quantumarchitecture} recognizes the stateful and ephemeral nature of entanglement and discusses continuous overlay regeneration. Nevertheless, its routing-table entries do not explicitly include age, current fidelity, generation time, or remaining coherence budget.
+
+The proposed thesis addresses this limitation by extending compact quantum-routing entries with explicit temporal state and by studying how stale or degrading artificial links affect route feasibility, fidelity, and entangling stretch \cite{ercetin2026fidelityage,ceran2026age}.
+\section{Age-Aware Scheduling and Control}
+
+Age-aware scheduling has recently emerged as an important research direction in quantum networking because entangled resources are both probabilistic and time-sensitive. A scheduler must decide which flow, link, or swapping operation should receive limited network resources while accounting for fidelity degradation, memory constraints, and service regularity \cite{ercetin2026fidelityage,ceran2026age}.
+
+One recent approach introduces the Fidelity-Age metric, which measures the time elapsed since the most recent successful delivery of an entangled pair whose fidelity satisfies a prescribed threshold \cite{ercetin2026fidelityage}. For a source--destination request $(s,d)$, the Fidelity-Age process can be written as
+
+\begin{equation}
+    A_{s,d}(t)
+    =
+    t
+    -
+    \max
+    \left\{
+    t_n^{(s,d)}
+    \leq t
+    \right\},
+\end{equation}
+
+where $t_n^{(s,d)}$ denotes the time of the most recent usable entanglement delivery.
+
+The age increases when no usable delivery occurs and resets when a newly delivered end-to-end pair satisfies
+
+\begin{equation}
+    F_{\mathrm{end}}
+    \geq
+    F_{\min}.
+\end{equation}
+
+This formulation jointly captures delivery regularity and fidelity-conditioned usability. A flow may have high throughput on average but still experience long periods without a usable entangled pair. Therefore, mean throughput alone is insufficient for evaluating temporal service quality in quantum networks \cite{ercetin2026fidelityage}.
+
+The corresponding long-run average Fidelity-Age can be expressed as
+
+\begin{equation}
+    \overline{A}_{s,d}
+    =
+    \limsup_{T\rightarrow\infty}
+    \frac{1}{T}
+    \sum_{t=1}^{T}
+    A_{s,d}(t).
+\end{equation}
+
+The system objective is then to minimize a weighted sum of average ages:
+
+\begin{equation}
+    \min_{\phi \in \Phi}
+    \sum_{(s,d)\in\mathcal{P}}
+    w_{s,d}
+    \overline{A}_{s,d},
+\end{equation}
+
+subject to attempt-budget, memory, link-exclusivity, swapping, purification, and fidelity constraints.
+
+The Fidelity-Age study proposes lightweight scheduling methods, including threshold-based and index-based policies. A threshold policy prioritizes flows whose age exceeds a predefined value, whereas an index policy ranks flows using a combination of instantaneous utility and current age \cite{ercetin2026fidelityage}.
+
+These scheduling concepts are closely related to adaptive routing because routing decisions should consider not only the current availability of entangled resources but also their expected future quality and freshness. Therefore, age-aware scheduling provides an important foundation for routing frameworks that explicitly model temporal link states \cite{halder2024optimal,ercetin2026fidelityage}.
+A generic age-aware scheduling score may be represented as
+
+\begin{equation}
+    I_{s,d}(t)
+    =
+    \frac{U_{s,d}(t)}
+    {1+\beta A_{s,d}(t)},
+\end{equation}
+
+where $U_{s,d}(t)$ represents an instantaneous utility, such as expected success probability or fidelity, and $\beta$ controls the influence of age.
+
+The simulations reported in \cite{ercetin2026fidelityage} show that age-aware scheduling can substantially reduce extreme-age events, starvation, and unfairness while preserving throughput. However, the study focuses primarily on flow scheduling over a repeater grid rather than on compact routing over a quantum-native artificial overlay.
+
+A related approach introduces the Age of Entanglement for satellite-assisted repeater chains with intermittent availability \cite{ceran2026age}. In this model, the network state includes satellite visibility, elementary-link ages, and the end-to-end entanglement age:
+
+\begin{equation}
+    s_t
+    =
+    \left(
+    v_{12}^{t},
+    v_{23}^{t},
+    m_{12}^{t},
+    m_{23}^{t},
+    \Delta_{t}^{e}
+    \right).
+\end{equation}
+
+The action space includes elementary-link generation, waiting, and entanglement swapping:
+
+\begin{equation}
+    a_t
+    =
+    \left(
+    a_{12}^{t},
+    a_{23}^{t},
+    a_{\mathrm{sw}}^{t}
+    \right).
+\end{equation}
+
+A successful swapping operation resets the end-to-end Age of Entanglement according to the ages of the two elementary links:
+
+\begin{equation}
+    \Delta_{t+1}^{e}
+    =
+    m_{12}^{t}
+    +
+    m_{23}^{t}.
+\end{equation}
+
+If swapping does not succeed, the age increases:
+
+\begin{equation}
+    \Delta_{t+1}^{e}
+    =
+    \Delta_t^{e}
+    +
+    1.
+\end{equation}
+
+The problem is formulated as an average-cost Markov decision process, where the controller jointly decides whether to generate, wait, discard, regenerate, or swap entanglement. Relative Value Iteration is then used to obtain an optimal stationary policy \cite{ceran2026age}.
+
+This work is important because it demonstrates that generation, storage, discard, regeneration, and swapping decisions can be optimized jointly under temporal degradation. Therefore, regeneration or age-aware control alone cannot be considered a sufficient research contribution.
+
+Nevertheless, the satellite-based Age of Entanglement model is limited to a three-node linear repeater chain. It does not consider general graph routing, multiple competing routes, quantum addressing, compact routing tables, artificial ESP overlays, Partial-Anchor or Full-Anchor structures, or entangling-stretch guarantees.
+
+The distinction between scheduling and routing is therefore essential. Age-aware scheduling determines which request or operation should receive service, while compact routing determines which sequence of artificial e-links should be selected to establish end-to-end entanglement.
+
+Existing age-aware studies provide strong temporal-control mechanisms, but they do not examine how stale e-links affect the structural guarantees of a compact routing architecture. In particular, they do not analyze whether aging may invalidate an anchor link, increase effective entangling stretch, reduce overlay reachability, or require proactive replacement of specific artificial links.
+
+This motivates a joint perspective in which temporal state influences both route selection and overlay maintenance. The proposed thesis therefore extends existing age-aware control by embedding temporal e-link information into a scalable quantum-native compact-routing framework.
+\section{Quantum-Native Addressing and Entanglement Overlay Networks}
+
+Quantum-native network architecture departs from the classical assumption that network nodes only forward information over persistent physical links. In the Quantum Internet, entanglement itself acts as the primary communication resource, and network nodes must generate, store, monitor, manipulate, and replenish entangled states \cite{caleffi2025quantumarchitecture,wehner2018vision}.
+
+The architecture proposed in \cite{caleffi2025quantumarchitecture} introduces a two-tier hierarchy. The upper tier is composed of Entanglement Service Providers, referred to as ESPs, while the lower tier contains quantum edge nodes that consume entanglement resources for applications such as teleportation, distributed quantum computing, sensing, and quantum key distribution.
+
+The ESPs form an entangled backbone by proactively generating and maintaining entanglement with selected remote ESPs. This creates an artificial topology over the underlying physical network.
+
+Let the physical quantum network be represented as
+
+\begin{equation}
+    G = (V,E),
+\end{equation}
+
+where $V$ is the set of network nodes and $E$ is the set of physical quantum links.
+
+The artificial entanglement overlay may be represented as
+
+\begin{equation}
+    G_{\mathrm{E}}(t)
+    =
+    \left(
+    V_{\mathrm{E}},
+    E_{\mathrm{E}}(t)
+    \right),
+\end{equation}
+
+where $V_{\mathrm{E}}$ denotes the set of ESPs and $E_{\mathrm{E}}(t)$ denotes the set of artificial entanglement links available at time $t$.
+
+Unlike the physical topology, the artificial topology is dynamic. An artificial e-link may be created through elementary-link generation and entanglement swapping, consumed by an application, degraded by decoherence, or removed after failure. Therefore, the state of an artificial overlay depends not only on connectivity but also on the temporal condition of the underlying entanglement resources \cite{caleffi2025quantumarchitecture,ercetin2026fidelityage}.
+
+The architecture includes an Entanglement-Defined Controller, or EDC, which performs three main functions:
+
+\begin{itemize}
+    \item monitoring the availability and fidelity of entangled resources;
+    \item reconfiguring the artificial topology; and
+    \item enforcing routing, recovery, and resource-allocation policies.
+\end{itemize}
+
+The EDC is conceptually similar to a software-defined networking controller, but its role is broader because it must manage non-persistent and stateful quantum resources.
+
+The proposed architecture also separates the control plane from the data plane. The control plane coordinates routing and entanglement-resource management, whereas the data plane performs entanglement generation, purification, swapping, forwarding, and overlay repair.
+
+A key feature of the architecture is continuous overlay maintenance. Artificial links are consumed during end-to-end entanglement establishment and must therefore be regenerated. This means that overlay refresh, link regeneration, and resource replenishment are already recognized as necessary architectural functions \cite{caleffi2025quantumarchitecture}.
+
+Consequently, overlay maintenance or regeneration alone cannot be treated as a novel research contribution. The research opportunity lies in determining how maintenance decisions should be made under explicit temporal-state information, including link age, effective fidelity, and remaining coherence time.
+
+The same architecture introduces a quantum addressing scheme in which each node is assigned a quantum address represented by a computational-basis state. For a network containing $n$ nodes, the address length is
+
+\begin{equation}
+    N
+    =
+    \left\lceil
+    \log_{2} n
+    \right\rceil.
+\end{equation}
+
+A quantum address can be represented as
+
+\begin{equation}
+    |v_i\rangle
+    \in
+    \left\{
+    |x\rangle
+    \mid
+    x \in \{0,1\}^{N}
+    \right\}.
+\end{equation}
+
+Unlike a classical address, a quantum address may also appear in a superposition representing a set of nodes. For example,
+
+\begin{equation}
+    |A\rangle
+    =
+    \frac{1}{\sqrt{M}}
+    \sum_{i=1}^{M}
+    |v_i\rangle
+\end{equation}
+
+may represent a set of $M$ quantum nodes.
+
+This allows routing information about multiple ESPs to be encoded compactly inside a quantum routing table \cite{caleffi2025quantumarchitecture}.
+
+The quantum routing table does not store only physical next hops. Instead, it contains information about locally stored e-bits, the quantum identities of the remote ESPs sharing those e-bits, and superposed addresses representing e-neighborhood information.
+
+A conceptual routing-table entry can be written as
+
+\begin{equation}
+    \mathcal{R}_{ij}
+    =
+    \left[
+    \text{e-bits},
+    |v_j\rangle,
+    |\mathcal{N}(v_j)\rangle,
+    \text{anchor status}
+    \right].
+\end{equation}
+
+This structure enables routing decisions over the artificial entanglement topology rather than only over the physical graph \cite{caleffi2025quantumarchitecture}.
+
+However, the routing-table design in \cite{caleffi2025quantumarchitecture} does not explicitly include
+
+\begin{itemize}
+    \item entanglement age,
+    \item generation time,
+    \item current effective fidelity,
+    \item remaining coherence time,
+    \item expiration probability, or
+    \item regeneration urgency.
+\end{itemize}
+
+This omission is significant because two e-links with the same structural role may have very different temporal usability due to different storage durations, coherence properties, and degradation rates \cite{ercetin2026fidelityage,ceran2026age}.
+
+A temporally extended routing-table entry may therefore be represented as
+
+\begin{equation}
+    \mathcal{R}_{ij}(t)
+    =
+    \left[
+    \text{e-bits},
+    |v_j\rangle,
+    |\mathcal{N}(v_j)\rangle,
+    A_{ij}(t),
+    F_{ij}^{\mathrm{eff}}(t),
+    B_{ij}(t)
+    \right],
+\end{equation}
+
+where $A_{ij}(t)$ is the e-link age, $F_{ij}^{\mathrm{eff}}(t)$ is the current effective fidelity, and $B_{ij}(t)$ is the remaining coherence budget.
+
+The integration of this temporal information creates a direct connection between quantum-native addressing, compact routing, and age-dependent entanglement management. This connection forms the central research direction of the present thesis.
+\section{Compact Quantum Routing}
+
+Compact routing aims to reduce routing-table size while preserving bounded route quality. In a large-scale quantum network, maintaining entanglement between every pair of ESPs would require excessive quantum memory, control signaling, and continuous regeneration. Therefore, a scalable routing protocol must operate over a sparse artificial entanglement overlay \cite{caleffi2025quantumarchitecture}.
+
+The quantum-native routing architecture in \cite{caleffi2025quantumarchitecture} introduces compact routing based on two design objectives:
+
+\begin{itemize}
+    \item sublinear routing-table size; and
+    \item constant entangling stretch.
+\end{itemize}
+
+For a network with $n_e$ Entanglement Service Providers, each ESP maintains approximately
+
+\begin{equation}
+    \widetilde{O}
+    \left(
+    \sqrt{n_e}
+    \right)
+\end{equation}
+
+routing-table entries, where the soft-$O$ notation suppresses logarithmic factors.
+
+The routing framework defines a general link-entanglement cost
+
+\begin{equation}
+    w(i,j),
+\end{equation}
+
+which represents the cost of establishing entanglement between ESPs $v_i$ and $v_j$ \cite{caleffi2025quantumarchitecture}.
+
+The cost metric is assumed to support an order relation and a composition operator $\oplus$. For a multi-hop artificial route
+
+\begin{equation}
+    R =
+    \left(
+    v_i,
+    v_{r_1},
+    \ldots,
+    v_{r_k},
+    v_j
+    \right),
+\end{equation}
+
+the accumulated entangling cost is represented as
+
+\begin{equation}
+    w_R(i,j)
+    =
+    w(i,r_1)
+    \oplus
+    w(r_1,r_2)
+    \oplus
+    \cdots
+    \oplus
+    w(r_k,j).
+\end{equation}
+
+The optimal entangling cost between two ESPs is
+
+\begin{equation}
+    w^{*}(i,j)
+    =
+    \min_{R \in \mathcal{R}_{i,j}}
+    w_R(i,j),
+\end{equation}
+
+where $\mathcal{R}_{i,j}$ is the set of feasible entanglement routes between $v_i$ and $v_j$.
+
+The entangling stretch of a routing protocol is defined as
+
+\begin{equation}
+    ES(i,j)
+    =
+    \frac
+    {
+    w_{R_{\mathrm{QR}}}(i,j)
+    }
+    {
+    w^{*}(i,j)
+    },
+\end{equation}
+
+where $R_{\mathrm{QR}}$ is the route selected by the quantum-routing protocol.
+
+The worst-case entangling stretch is
+
+\begin{equation}
+    ES
+    =
+    \max_{v_i,v_j \in V_2}
+    ES(i,j).
+\end{equation}
+
+A routing protocol is optimal when
+
+\begin{equation}
+    ES = 1.
+\end{equation}
+
+A value greater than one indicates that the protocol may choose a route with higher entangling cost than the globally optimal route.
+
+The compact-routing architecture proposes two variants: the Partial-Anchor Scheme and the Full-Anchor Scheme \cite{caleffi2025quantumarchitecture}.
+
+\subsection{Partial-Anchor Scheme}
+
+In the Partial-Anchor Scheme, each ESP proactively maintains low-cost artificial links with the nodes in its e-neighborhood. A smaller subset of ESPs, called anchor nodes, maintains additional long-range artificial links \cite{caleffi2025quantumarchitecture}.
+
+The e-neighborhood of ESP $v_i$ is denoted by
+
+\begin{equation}
+    \mathcal{N}(v_i),
+\end{equation}
+
+and contains the ESPs with the lowest entangling cost relative to $v_i$.
+
+The number of e-neighbors is selected approximately as
+
+\begin{equation}
+    k
+    =
+    (1+m)
+    \sqrt{n_e}
+    \log n_e,
+\end{equation}
+
+where $m>1$ is a design parameter.
+
+The anchor set is denoted by
+
+\begin{equation}
+    \mathcal{T}
+    \subseteq
+    V_2,
+\end{equation}
+
+with cardinality approximately
+
+\begin{equation}
+    |\mathcal{T}|
+    =
+    \sqrt{n_e}.
+\end{equation}
+
+Each anchor proactively establishes and maintains entanglement with the other anchors. This creates a sparse long-range backbone over the local e-neighborhood structure \cite{caleffi2025quantumarchitecture}.
+
+Under this design, any ESP can reach another ESP through at most three artificial entanglement hops with high probability.
+
+For additive entangling-cost metrics, the Partial-Anchor Scheme guarantees
+
+\begin{equation}
+    ES
+    \leq
+    5.
+\end{equation}
+
+The scheme provides low memory overhead but may produce larger routing cost because only a subset of ESPs maintains long-range artificial links.
+
+However, this architecture assumes that the entanglement resources forming the artificial overlay remain sufficiently available and does not explicitly model the temporal evolution of individual e-links, including aging, fidelity degradation, and remaining coherence budget.
+\subsection{Full-Anchor Scheme}
+
+In the Full-Anchor Scheme, every ESP maintains both local e-neighborhood links and selected long-range artificial links \cite{caleffi2025quantumarchitecture}.
+
+The ESP set is divided into tracked subsets, and each ESP proactively maintains entanglement with the nodes belonging to one assigned tracked set.
+
+This design increases artificial-overlay connectivity while maintaining sublinear routing-table size.
+
+Under the Full-Anchor Scheme, any ESP can reach another ESP through at most two artificial entanglement hops with high probability.
+
+For additive entangling-cost metrics, the Full-Anchor Scheme guarantees
+
+\begin{equation}
+    ES
+    \leq
+    3.
+\end{equation}
+
+Therefore, the Full-Anchor Scheme provides lower worst-case entangling stretch than the Partial-Anchor Scheme, but it requires more ESPs to maintain long-range entanglement resources.
+
+The main trade-off can be summarized as
+
+\begin{equation}
+    \text{lower overlay-maintenance complexity}
+    \quad
+    \longleftrightarrow
+    \quad
+    \text{lower entangling stretch}.
+\end{equation}
+
+The existing stretch guarantees are primarily structural. They assume that the artificial links required by the routing scheme are available and usable when selected \cite{caleffi2025quantumarchitecture}.
+
+However, an artificial link may become stale, lose fidelity, expire, or require regeneration before it can be used. Consequently, the static stretch bound may not accurately reflect the actual routing cost under temporal degradation. This limitation motivates the integration of temporal resource information into compact quantum routing.
+
+To address this issue, a time-dependent entangling cost can be introduced:
+
+\begin{equation}
+    w_t(i,j)
+    =
+    \alpha C_F(i,j,t)
+    +
+    \beta C_A(i,j,t)
+    +
+    \gamma C_B(i,j,t)
+    +
+    \delta C_R(i,j,t),
+\end{equation}
+
+where
+
+\begin{itemize}
+    \item $C_F(i,j,t)$ represents fidelity-related cost;
+    \item $C_A(i,j,t)$ represents entanglement-age cost;
+    \item $C_B(i,j,t)$ represents remaining-coherence-budget risk; and
+    \item $C_R(i,j,t)$ represents regeneration cost or delay.
+\end{itemize}
+
+The corresponding temporal entangling stretch may be defined as
+
+\begin{equation}
+    ES_t(i,j)
+    =
+    \frac
+    {
+    w_t
+    \left(
+    R_{\mathrm{QR}}(i,j)
+    \right)
+    }
+    {
+    w_t
+    \left(
+    R_t^{*}(i,j)
+    \right)
+    },
+\end{equation}
+
+where $R_t^{*}(i,j)$ is the optimal temporally feasible route at time $t$.
+
+This extension allows compact-routing performance to be evaluated when artificial links have heterogeneous ages, coherence times, fidelities, and regeneration delays.
+
+The central research question is whether temporal-state awareness can improve fidelity and route reliability while preserving the original compact-routing property
+
+\begin{equation}
+    \widetilde{O}
+    \left(
+    \sqrt{n_e}
+    \right).
+\end{equation}
+
+\section{Comparative Analysis of Closest Prior Work}
+
+The closest prior studies can be grouped into four research lines: quantum-native compact routing, Fidelity-Age scheduling, Age of Entanglement control, and adaptive belief-state routing. These studies address different aspects of temporal quantum-resource management, but none of them fully integrates explicit e-link temporal state with scalable compact routing over an artificial entanglement overlay.
+
+\begin{table}[htbp]
+\centering
+\caption{Comparison of Closest Prior Work}
+\label{tab:closest_prior_work}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{p{3.2cm}cccccc}
+\toprule
+\textbf{Research Line} &
+\textbf{Age} &
+\textbf{Fidelity} &
+\textbf{Decoherence} &
+\textbf{Routing} &
+\textbf{Compact Overlay} &
+\textbf{Stretch} \\
+\midrule
+
+Quantum-native compact routing
+&
+No explicit age
+&
+Abstractly supported
+&
+Abstractly supported
+&
+Yes
+&
+Yes
+&
+Yes
+\\
+
+Fidelity-Age scheduling
+&
+Flow-level
+&
+Yes
+&
+Yes
+&
+Scheduling-oriented
+&
+No
+&
+No
+\\
+
+Satellite Age of Entanglement
+&
+Pair and end-to-end age
+&
+Age-based quality
+&
+Yes
+&
+Chain control
+&
+No
+&
+No
+\\
+
+Belief-state adaptive routing
+&
+Pair-level state
+&
+Yes
+&
+Yes
+&
+Yes
+&
+No
+&
+No
+\\
+
+Proposed thesis
+&
+Explicit e-link age
+&
+Effective fidelity
+&
+Yes
+&
+Yes
+&
+Yes
+&
+Temporal stretch
+\\
+
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+The quantum-native architecture in \cite{caleffi2025quantumarchitecture} provides artificial entanglement overlays, quantum addressing, compact routing tables, Partial-Anchor and Full-Anchor schemes, and bounded entangling stretch. However, it does not explicitly represent e-link age, generation time, remaining coherence budget, or time-varying fidelity inside the routing table.
+
+The Fidelity-Age framework in \cite{ercetin2026fidelityage} explicitly combines delivery freshness with a minimum fidelity threshold. It also considers finite memory, probabilistic generation, purification, swapping, and scheduling fairness. Nevertheless, its primary focus is flow scheduling rather than compact route construction over a quantum-native overlay.
+
+The satellite-assisted Age of Entanglement model in \cite{ceran2026age} jointly controls generation, waiting, swapping, discard, and regeneration under intermittent visibility and memory degradation. However, it is limited to a three-node repeater chain and does not study general graph routing, artificial overlays, compact routing tables, or entangling stretch.
+
+Existing adaptive routing approaches also investigate dynamic quantum-resource states and uncertainty-aware decision making, but they do not combine temporal e-link modeling with scalable compact overlay routing.
+
+The comparison shows that age-awareness, fidelity-awareness, decoherence modeling, regeneration, and adaptive control already exist in the literature. Therefore, none of these components can be claimed as individually novel.
+
+The remaining research opportunity lies in their integration with scalable quantum-native compact routing. More specifically, existing work does not sufficiently characterize how stale artificial e-links affect route feasibility, overlay reachability, anchor reliability, memory overhead, and entangling stretch.
+
+This motivates a temporal-state-aware routing framework that extends compact quantum routing by incorporating dynamic e-link age, effective fidelity, and coherence-aware route selection.
+
+\section{Limitations of Existing Literature}
+
+Although recent research has significantly advanced quantum routing, entanglement scheduling, fidelity management, and age-aware control, several limitations remain at the intersection of temporal entanglement management and scalable compact routing.
+
+\subsection{Absence of Explicit Temporal State in Compact Routing Tables}
+
+Existing quantum-native compact-routing tables primarily store entangled resources, e-hop identities, e-neighborhood information, and anchor-related metadata \cite{caleffi2025quantumarchitecture}. However, they do not explicitly include the generation time, age, current effective fidelity, remaining coherence budget, or expiration risk of each stored e-link.
+
+This omission prevents the routing protocol from distinguishing between two structurally equivalent artificial links that have different temporal usability.
+
+\subsection{Static Entangling-Stretch Guarantees}
+
+The Partial-Anchor and Full-Anchor schemes provide constant worst-case entangling-stretch bounds. For additive metrics, these bounds are
+
+\begin{equation}
+    ES \leq 5
+\end{equation}
+
+for the Partial-Anchor Scheme and
+
+\begin{equation}
+    ES \leq 3
+\end{equation}
+
+for the Full-Anchor Scheme.
+
+However, these guarantees are derived under the assumption that the required artificial links are available and usable when selected \cite{caleffi2025quantumarchitecture}. They do not characterize the effect of stale links, fidelity decay, regeneration delay, or temporal route infeasibility.
+
+\subsection{Limited Architectural Scope of Age-Aware Studies}
+
+Recent age-aware studies explicitly model pair age, Fidelity-Age, end-to-end Age of Entanglement, discard, regeneration, and adaptive control \cite{ercetin2026fidelityage,ceran2026age}. Nevertheless, these works mainly focus on scheduling, small repeater chains, or flow-level control.
+
+They do not investigate quantum addressing, compact routing tables, artificial ESP overlays, anchor structures, or entangling-stretch guarantees.
+
+\subsection{Regeneration Without Compact-Overlay-Aware Prioritization}
+
+Existing work already recognizes that depleted or stale entangled resources must be discarded or regenerated \cite{ercetin2026fidelityage,ceran2026age}. Therefore, regeneration alone is not a new contribution.
+
+The unresolved issue is how regeneration resources should be prioritized across a compact artificial overlay. Regenerating one anchor link may restore global reachability, while regenerating a local e-neighbor link may improve only a small part of the network. Existing studies do not sufficiently quantify this structural difference.
+
+\subsection{No Joint Analysis of Temporal and Scalability Trade-offs}
+
+Current research does not jointly characterize the relationship among
+
+\begin{equation}
+    \text{fidelity},
+    \quad
+    \text{age},
+    \quad
+    \text{coherence budget},
+    \quad
+    \text{regeneration cost},
+    \quad
+    \text{entangling stretch},
+    \quad
+    \text{routing-table overhead}.
+\end{equation}
+
+This trade-off is central to large-scale quantum-native routing because improved temporal freshness may require additional memory, control updates, or regeneration attempts.
+
+\subsection{Lack of Temporal Route-Feasibility Analysis}
+
+A route may be structurally available but temporally infeasible. For example, one or more artificial links may be expected to decohere below the required fidelity threshold before the end-to-end swapping sequence is completed.
+
+Existing compact-routing schemes do not explicitly define a route-feasibility condition such as
+
+\begin{equation}
+    F_{ij}^{\mathrm{eff}}
+    \left(
+    t+\widehat{D}_{\pi}
+    \right)
+    \geq
+    F_{\min},
+    \qquad
+    \forall (i,j)\in\pi.
+\end{equation}
+
+Without this condition, a selected route may fail despite being topologically valid.
+
+Therefore, a key open problem is how to integrate temporal-state information into compact quantum routing while preserving scalability, bounded routing-table complexity, and low entangling stretch.
+
+\subsection{Insufficient Evaluation Under Heterogeneous Temporal Conditions}
+
+Artificial e-links may differ in initial fidelity, coherence time, age, generation probability, and regeneration delay. Existing compact-routing analysis largely abstracts these differences through a general cost metric \cite{caleffi2025quantumarchitecture}.
+
+A detailed evaluation is still required to determine how Partial-Anchor and Full-Anchor schemes behave when e-links have heterogeneous temporal states, including different ages, fidelities, and remaining coherence times.
+
+These limitations indicate that the main unresolved problem is not the absence of age-awareness or regeneration individually. Rather, it is the absence of an explicit temporal-state framework integrated with scalable quantum-native compact routing and its analytical guarantees.
+
+\section{Identified Research Gap}
+
+Existing research has independently advanced fidelity-aware routing, decoherence-aware scheduling, explicit entanglement-age metrics, adaptive generation and swapping control, and quantum-native compact routing. Recent studies already model pair age, flow-level Fidelity-Age, end-to-end Age of Entanglement, discard decisions, regeneration, and adaptive control \cite{ercetin2026fidelityage,ceran2026age}. Therefore, age-awareness, fidelity-awareness, regeneration, or adaptive routing alone cannot be claimed as novel contributions.
+
+At the same time, quantum-native compact-routing architectures provide scalable routing tables, artificial entanglement overlays, quantum addressing, Partial-Anchor and Full-Anchor schemes, and bounded entangling stretch \cite{caleffi2025quantumarchitecture}. However, their routing tables do not explicitly represent the temporal state of each stored artificial e-link.
+
+In particular, the following e-link attributes are not directly incorporated into the compact routing-table structure:
+
+\begin{itemize}
+    \item generation time;
+    \item current age;
+    \item current effective fidelity;
+    \item remaining coherence budget;
+    \item expiration probability;
+    \item predicted route-completion risk; and
+    \item regeneration urgency.
+\end{itemize}
+
+Although the general entangling-cost metric can abstractly represent fidelity, memory use, or decoherence, the existing framework does not define an explicit time-dependent cost model.
+
+Consequently, the effect of temporal degradation on compact-routing guarantees remains insufficiently characterized. A route may satisfy the structural conditions of the Partial-Anchor or Full-Anchor scheme but fail because one or more required e-links become unusable before completion.
+
+This leads to the central research gap:
+
+\begin{quote}
+Existing quantum-network studies do not sufficiently integrate explicit per-e-link temporal state with scalable quantum-native compact routing. In particular, the impact of age-dependent fidelity degradation, remaining coherence budget, and regeneration delay on route feasibility, overlay reliability, and entangling stretch remains insufficiently studied.
+\end{quote}
+
+The gap lies at the intersection of two established research directions:
+
+\begin{equation}
+    \text{temporal entanglement management}
+    \quad
+    +
+    \quad
+    \text{quantum-native compact routing}.
+\end{equation}
+
+Addressing this gap requires a framework that extends compact routing-table entries with temporal state while preserving sublinear routing-table scaling and bounded routing overhead.
+
+A time-dependent routing entry may be defined as
+
+\begin{equation}
+    \mathcal{R}_{ij}(t)
+    =
+    \left[
+    |v_j\rangle,
+    A_{ij}(t),
+    F_{ij}^{\mathrm{eff}}(t),
+    T_{2,ij},
+    B_{ij}(t),
+    C_{ij}^{\mathrm{regen}}
+    \right].
+\end{equation}
+
+The remaining coherence budget may be represented as
+
+\begin{equation}
+    B_{ij}(t)
+    =
+    T_{2,ij}
+    -
+    A_{ij}(t)
+    -
+    \widehat{D}_{ij},
+\end{equation}
+
+where $\widehat{D}_{ij}$ is the expected additional delay before the e-link is consumed.
+
+This temporal state can then support route rejection, rerouting, selective regeneration, anchor-link replacement, and overlay repair.
+
+The research gap is therefore not the absence of temporal concepts in quantum networking. Rather, it is the lack of a rigorous integration of temporal e-link state into compact overlay routing and stretch analysis.
+
+\section{Proposed Research Direction}
+
+Based on the identified gap, this thesis proposes a temporal-state-aware extension of quantum-native compact routing for artificial entanglement overlay networks. The main objective is to incorporate explicit e-link temporal information into routing and maintenance decisions while preserving the scalability advantages of compact routing.
+
+The proposed research title is
+
+\begin{quote}
+\textbf{Temporal-State-Aware Quantum Routing for Fidelity-Preserving Entanglement Distribution in Quantum Networks}
+\end{quote}
+
+The proposed framework extends each artificial e-link with a temporal state defined as
+
+\begin{equation}
+    \mathcal{L}_{ij}(t)
+    =
+    \left[
+    A_{ij}(t),
+    F_{ij}^{0},
+    F_{ij}^{\mathrm{eff}}(t),
+    T_{2,ij},
+    B_{ij}(t),
+    C_{ij}^{\mathrm{regen}}
+    \right],
+\end{equation}
+
+where
+
+\begin{itemize}
+    \item $A_{ij}(t)$ is the age of the e-link;
+    \item $F_{ij}^{0}$ is the initial fidelity;
+    \item $F_{ij}^{\mathrm{eff}}(t)$ is the current effective fidelity;
+    \item $T_{2,ij}$ is the coherence time;
+    \item $B_{ij}(t)$ is the remaining coherence budget; and
+    \item $C_{ij}^{\mathrm{regen}}$ is the regeneration cost or delay.
+\end{itemize}
+
+The remaining coherence budget is defined as
+
+\begin{equation}
+    B_{ij}(t)
+    =
+    T_{2,ij}
+    -
+    A_{ij}(t)
+    -
+    \widehat{D}_{ij},
+\end{equation}
+
+where $\widehat{D}_{ij}$ denotes the predicted additional delay before the link is consumed.
+
+A route is considered temporally feasible only if every e-link remains usable until route completion. This can be expressed as
+
+\begin{equation}
+    F_{ij}^{\mathrm{eff}}
+    \left(
+    t+\widehat{D}_{\pi}
+    \right)
+    \geq
+    F_{\min},
+    \qquad
+    \forall (i,j)\in\pi.
+\end{equation}
+
+The static entangling cost is extended into a time-dependent cost:
+
+\begin{equation}
+    w_t(i,j)
+    =
+    \alpha C_F(i,j,t)
+    +
+    \beta C_A(i,j,t)
+    +
+    \gamma C_B(i,j,t)
+    +
+    \delta C_R(i,j,t),
+\end{equation}
+
+where the terms represent fidelity cost, age cost, coherence-budget risk, and regeneration cost, respectively.
+
+The corresponding temporal entangling stretch is defined as
+
+\begin{equation}
+    ES_t(i,j)
+    =
+    \frac{
+    w_t
+    \left(
+    R_{\mathrm{QR}}(i,j)
+    \right)
+    }{
+    w_t
+    \left(
+    R_t^{*}(i,j)
+    \right)
+    }.
+\end{equation}
+
+The proposed framework supports the following temporal resource-management actions:
+
+\begin{itemize}
+    \item retain a usable e-link;
+    \item reject a temporally infeasible route;
+    \item reroute through fresher links;
+    \item regenerate a stale e-link;
+    \item replace an unreliable anchor link; and
+    \item repair the artificial overlay.
+\end{itemize}
+
+The main research questions are:
+
+\begin{enumerate}
+    \item How can explicit e-link temporal state be incorporated into a quantum-native compact routing table while preserving sublinear memory scaling?
+
+    \item How do age, fidelity degradation, coherence budget, and regeneration delay affect route feasibility in Partial-Anchor and Full-Anchor overlays?
+
+    \item How does temporal degradation affect entangling stretch and end-to-end reliability?
+
+    \item Can coherence-budget-aware routing outperform static compact routing, fidelity-only routing, age-only routing, and fixed-threshold approaches?
+\end{enumerate}
+
+The expected contributions of this thesis are:
+
+\begin{enumerate}
+    \item a temporal-state extension of the compact quantum routing table;
+
+    \item a coherence-budget model for artificial e-links;
+
+    \item a time-dependent entangling-cost formulation;
+
+    \item a temporal route-feasibility criterion;
+
+    \item a coherence-budget-aware routing and overlay-maintenance algorithm;
+
+    \item a temporal entangling-stretch formulation; and
+
+    \item a comparative evaluation of Partial-Anchor and Full-Anchor schemes under heterogeneous temporal conditions.
+\end{enumerate}
+
+The evaluation will compare the proposed method against static compact routing, fidelity-only routing, age-only routing, fixed-cutoff routing, and regeneration heuristics. Performance will be measured using end-to-end fidelity, delivery success probability, throughput, route failure rate, memory overhead, regeneration cost, and temporal entangling stretch.
+
+This research direction preserves the key advantage of quantum-native compact routing, namely scalable overlay-based communication, while addressing its limitation in representing time-dependent entanglement-resource states.

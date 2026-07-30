@@ -1,0 +1,155 @@
+\chapter{Introduction}
+
+\section{Research Background}
+The Quantum Internet is envisioned as a future communication infrastructure that connects quantum processors, sensors, memories, and users through distributed quantum entanglement. Unlike the classical Internet, where information is transmitted as bits through relatively persistent communication links, quantum networks rely on the generation, storage, distribution, and manipulation of fragile quantum states.
+
+Quantum entanglement is one of the central resources of quantum networking. It supports important applications such as quantum teleportation, distributed quantum computing, quantum sensing, and quantum key distribution. However, direct entanglement distribution over long distances is limited by optical loss, channel noise, imperfect operations, and the no-cloning theorem.
+
+Quantum repeaters are introduced to overcome these limitations. A long communication path is divided into shorter elementary links, where entanglement is generated between neighboring nodes. Intermediate repeater nodes then perform entanglement swapping to establish end-to-end entanglement between remote users.
+
+Although quantum repeaters improve communication distance, they introduce new routing and resource-management challenges. Entanglement generation is probabilistic, swapping may fail, purification consumes multiple entangled pairs, and quantum memories have limited coherence times. Therefore, a route that is topologically available may not necessarily be physically or temporally usable.
+
+The quality of an entangled state is commonly measured using fidelity. A generated pair is useful only when its fidelity remains above an application-specific threshold. However, fidelity decreases while entanglement is stored in quantum memory because of decoherence. This means that the usefulness of an entangled link depends not only on its existence, but also on its age, initial fidelity, coherence time, and expected delay before consumption.
+
+Recent research has introduced age-aware concepts such as Fidelity-Age and Age of Entanglement. These studies demonstrate that temporal freshness affects delivery regularity, fairness, route reliability, and end-to-end quality. Age-aware scheduling and control policies can reduce starvation and improve the timeliness of usable entanglement deliveries.
+
+In parallel, recent quantum-native network architectures have proposed artificial entanglement overlays, quantum addressing, Entanglement-Defined Controllers, compact routing tables, and bounded entangling stretch. In these architectures, selected nodes proactively maintain entanglement with remote nodes, creating an artificial topology above the physical network.
+
+The Partial-Anchor and Full-Anchor compact-routing schemes provide scalable routing-table structures with sublinear memory requirements. For additive entangling-cost metrics, the schemes provide worst-case entangling-stretch bounds of five and three, respectively.
+
+However, the temporal state of each stored artificial e-link is not explicitly represented in the compact routing table. Information such as generation time, current age, effective fidelity, remaining coherence budget, expiration risk, and regeneration urgency is not directly incorporated into route selection.
+
+This creates a significant research problem. An artificial link may be structurally present but may become unusable before the required swapping sequence is completed. Similarly, a stale anchor link may reduce overlay reachability, increase regeneration delay, or invalidate the original entangling-stretch guarantee.
+
+Therefore, scalable quantum-native routing requires more than static connectivity and cost information. It requires temporal-state awareness that can determine whether an artificial e-link will remain usable until route completion.
+
+This thesis investigates temporal-state-aware compact routing with coherence-budget management in quantum-native entanglement overlay networks. The study extends the compact-routing framework by introducing explicit e-link age, effective fidelity, remaining coherence budget, and regeneration cost into routing and overlay-maintenance decisions.
+\section{Research Motivation and Significance}
+The motivation for this research arises from the mismatch between the dynamic physical behavior of entanglement and the largely static assumptions used in existing compact-routing formulations. Artificial e-links are created proactively, stored in finite-coherence quantum memories, consumed during entanglement swapping, and continuously regenerated. Therefore, their routing value changes over time.
+
+A compact-routing protocol may identify a structurally valid path through the artificial overlay, but the selected e-links may not remain usable until the route is completed. This can occur when stored entanglement has already accumulated significant age, when the remaining coherence time is insufficient, or when regeneration delay is ignored during route selection.
+
+This issue is particularly important in anchor-based routing architectures. In the Partial-Anchor Scheme, a small subset of anchor nodes maintains long-range artificial links. The failure or degradation of one such link may affect many source--destination pairs. In the Full-Anchor Scheme, more nodes maintain long-range links, which can improve route quality but also increases temporal-maintenance complexity.
+
+Existing age-aware studies demonstrate that temporal freshness affects service reliability, fairness, and delivery quality. However, these studies mainly focus on scheduling, repeater chains, or local control. They do not analyze how temporal degradation affects compact-routing tables, anchor reliability, overlay reachability, or entangling stretch.
+
+Conversely, existing compact-routing architectures provide strong scalability and stretch guarantees, but they do not explicitly model the time-dependent state of each stored artificial e-link. This separation motivates the integration of temporal entanglement management with scalable compact routing.
+
+The significance of this research is both theoretical and practical. From a theoretical perspective, it extends static entangling-cost and stretch formulations into time-dependent routing models. It also investigates whether compact-routing guarantees remain meaningful when links age, decohere, and require regeneration.
+
+From a practical perspective, temporal-state-aware routing may reduce the selection of stale or near-expiration links, improve end-to-end fidelity, reduce route failure, and prioritize regeneration resources more effectively. It may also help an Entanglement-Defined Controller decide whether to retain, regenerate, replace, or avoid a particular artificial link.
+
+The proposed coherence-budget concept provides a direct estimate of whether an e-link is expected to remain usable until route completion. This allows routing decisions to account for both current quality and predicted future viability.
+
+The research is also significant for large-scale quantum-network design because it aims to preserve the sublinear routing-table complexity of compact routing. A useful solution must improve temporal reliability without requiring each node to maintain full global state.
+
+Therefore, the central significance of this work lies in developing a routing framework that jointly addresses scalability, fidelity, temporal freshness, coherence limitations, and overlay maintenance.
+\section{Problem Statement}
+Existing quantum-native compact-routing architectures provide scalable routing tables, artificial entanglement overlays, and bounded entangling-stretch guarantees. However, their routing decisions are primarily based on structural connectivity and generalized entangling cost, without explicitly representing the temporal condition of each stored artificial e-link.
+
+This creates a fundamental inconsistency between routing abstraction and physical entanglement behavior. Artificial e-links are non-persistent resources. Their fidelity decreases during storage, they may expire before use, and they must be regenerated after consumption or degradation.
+
+As a result, a route may be structurally valid but temporally infeasible. A selected path may contain one or more e-links that are too old, too close to decoherence, or unable to maintain the required fidelity until the expected completion of the swapping sequence.
+
+The problem becomes more critical in anchor-based compact routing. In the Partial-Anchor Scheme, the degradation of one long-range anchor link may affect several source--destination paths. In the Full-Anchor Scheme, larger numbers of long-range links improve connectivity but increase maintenance and regeneration requirements.
+
+Existing age-aware studies already model pair age, flow-level Fidelity-Age, end-to-end Age of Entanglement, discard, regeneration, and adaptive control. However, these approaches do not study quantum-native compact overlays, routing-table scalability, or entangling-stretch guarantees.
+
+Therefore, the unresolved problem is not the absence of age-awareness or regeneration individually. The main problem is the absence of a compact-routing framework that explicitly incorporates per-e-link temporal state into route selection and overlay-maintenance decisions.
+
+More specifically, existing work does not sufficiently answer the following questions:
+
+\begin{itemize}
+    \item How should e-link age and effective fidelity be represented inside a compact routing table?
+    \item How can the remaining coherence budget of an artificial e-link be estimated?
+    \item How should a route be rejected when one or more e-links are expected to expire before completion?
+    \item How should regeneration priorities be assigned across local, anchor, and tracked artificial links?
+    \item How does temporal degradation affect the entangling-stretch guarantees of Partial-Anchor and Full-Anchor schemes?
+    \item Can temporal-state awareness improve reliability without destroying sublinear routing-table scaling?
+\end{itemize}
+
+Accordingly, this thesis addresses the problem of designing a temporal-state-aware compact-routing framework that incorporates age, effective fidelity, coherence budget, and regeneration cost while preserving the scalability properties of quantum-native overlay routing.
+\section{Research Objectives}
+The primary objective of this research is to develop a temporal-state-aware compact-routing framework for quantum-native entanglement overlay networks.
+
+The proposed framework aims to incorporate explicit temporal information into route selection and overlay-maintenance decisions while preserving the scalability advantages of compact routing.
+
+The specific objectives are:
+
+\begin{enumerate}
+    \item To define a temporal-state representation for each artificial e-link, including age, initial fidelity, effective fidelity, coherence time, remaining coherence budget, and regeneration cost.
+
+    \item To extend the existing static entangling-cost model into a time-dependent routing metric.
+
+    \item To formulate a temporal route-feasibility condition that determines whether all e-links on a selected route are expected to remain usable until route completion.
+
+    \item To design a coherence-budget-aware routing algorithm for Partial-Anchor and Full-Anchor entanglement overlays.
+
+    \item To develop an overlay-maintenance policy that determines when to retain, regenerate, replace, or avoid stale artificial e-links.
+
+    \item To define a temporal entangling-stretch metric for evaluating compact-routing performance under age-dependent fidelity degradation.
+
+    \item To analyze the impact of heterogeneous e-link ages, coherence times, fidelities, and regeneration delays on routing reliability.
+
+    \item To compare the proposed method against static compact routing, fidelity-only routing, age-only routing, fixed-threshold routing, and basic regeneration heuristics.
+
+    \item To evaluate whether temporal-state awareness improves end-to-end fidelity, delivery success probability, route reliability, and overlay robustness without significantly increasing routing-table overhead.
+\end{enumerate}
+
+The overall goal is to determine whether temporal-state information can be integrated into quantum-native compact routing in a way that improves physical reliability while preserving sublinear memory scaling.
+\section{Research Questions}
+This research is guided by the following questions:
+
+\begin{enumerate}
+    \item How can explicit temporal state be incorporated into quantum-native compact routing-table entries without violating their sublinear scalability?
+
+    \item How should the age, effective fidelity, coherence time, and expected completion delay of an artificial e-link be combined into a remaining coherence-budget metric?
+
+    \item How can a routing protocol determine whether a structurally valid path is also temporally feasible?
+
+    \item How does temporal degradation affect the route quality and entangling-stretch guarantees of Partial-Anchor and Full-Anchor schemes?
+
+    \item How should regeneration resources be prioritized among local e-neighbor links, anchor links, and tracked long-range links?
+
+    \item Can coherence-budget-aware routing reduce stale-link selection, route failure, and fidelity violation compared with static, fidelity-only, age-only, and fixed-threshold routing?
+
+    \item What trade-offs arise among end-to-end fidelity, delivery success probability, regeneration cost, routing-table overhead, and temporal entangling stretch?
+\end{enumerate}
+\section{Research Contributions}
+The expected contributions of this research are as follows:
+
+\begin{enumerate}
+    \item A temporal-state extension of the quantum-native compact routing table that explicitly represents e-link age, effective fidelity, coherence time, remaining coherence budget, and regeneration cost.
+
+    \item A coherence-budget model that estimates whether an artificial e-link is expected to remain usable until the completion of an end-to-end entanglement route.
+
+    \item A time-dependent entangling-cost formulation that combines fidelity degradation, age, expiration risk, and regeneration delay.
+
+    \item A temporal route-feasibility criterion for rejecting structurally valid but temporally unreliable paths.
+
+    \item A coherence-budget-aware routing algorithm for Partial-Anchor and Full-Anchor entanglement overlays.
+
+    \item An overlay-maintenance policy for retaining, regenerating, replacing, or avoiding stale artificial e-links.
+
+    \item A temporal entangling-stretch formulation that evaluates compact-routing quality under heterogeneous age and decoherence conditions.
+
+    \item A comparative analysis of Partial-Anchor and Full-Anchor schemes under varying fidelity, coherence time, generation probability, and regeneration delay.
+
+    \item A simulation-based evaluation against static compact routing, fidelity-only routing, age-only routing, fixed-threshold routing, and basic regeneration heuristics.
+\end{enumerate}
+
+These contributions are intended to connect temporal entanglement management with scalable quantum-native compact routing without claiming that age-awareness, fidelity-awareness, or regeneration are individually novel.
+\section{Thesis Organization}
+This thesis is organized into six chapters.
+
+Chapter 1 introduces the research background, motivation, problem statement, objectives, research questions, and expected contributions. It explains why temporal-state awareness is necessary for scalable quantum-native compact routing.
+
+Chapter 2 reviews the relevant literature on quantum networking, entanglement distribution, routing, noise, decoherence, fidelity degradation, temporal entanglement metrics, age-aware control, quantum-native addressing, artificial entanglement overlays, and compact routing. It also identifies the gap between temporal entanglement management and scalable compact-routing architectures.
+
+Chapter 3 presents the system model and problem formulation. It defines the physical and artificial network topologies, e-link temporal state, fidelity-decay model, coherence budget, route-feasibility conditions, time-dependent entangling cost, and temporal entangling stretch.
+
+Chapter 4 introduces the proposed temporal-state-aware compact-routing and overlay-maintenance algorithms. It describes the routing-table extension, coherence-budget-aware path selection, stale-link handling, regeneration prioritization, and the adaptations required for Partial-Anchor and Full-Anchor schemes.
+
+Chapter 5 describes the simulation environment, experimental design, baseline methods, parameter settings, and evaluation metrics. It presents and analyzes the results in terms of fidelity, delivery success probability, route failure, regeneration cost, memory overhead, and temporal entangling stretch.
+
+Chapter 6 concludes the thesis by summarizing the main findings, discussing the limitations of the proposed framework, and outlining directions for future research.

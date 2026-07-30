@@ -1,0 +1,143 @@
+\chapter{Experimental Results and Discussion}
+
+\section{Experimental Setup}
+
+This section presents the experimental evaluation of the proposed
+Temporal-State-Aware Routing Framework. The simulation experiments are
+designed to evaluate routing reliability, recovery capability, robustness,
+and scalability in dynamic quantum networks.
+
+The simulation environment considers a quantum network consisting of
+entanglement links with dynamically changing temporal states. Each link
+is characterized by fidelity degradation, coherence budget, and expiration
+state. The proposed framework is evaluated under different experimental
+conditions including baseline comparison, ablation analysis, multi-seed
+validation, regeneration budget analysis, and large-scale network testing.
+
+The main evaluation metrics are:
+
+\begin{itemize}
+    \item Request acceptance ratio;
+    \item Routing reliability;
+    \item Link recovery capability;
+    \item Stability across different random seeds;
+    \item Scalability with increasing network size.
+\end{itemize}
+
+
+\section{Comparison with Baseline Routing Method}
+
+To evaluate the effectiveness of the proposed framework, the proposed
+Temporal-State-Aware Routing method is compared with a conventional
+baseline routing strategy.
+
+The comparison results demonstrate that considering temporal link quality
+provides better routing decisions than static routing approaches. By
+monitoring link aging and fidelity degradation, the proposed method avoids
+selecting unreliable entanglement paths.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\textwidth]
+{figures/baseline_comparison.png}
+\caption{Comparison between the proposed routing method and baseline approach.}
+\label{fig:baseline}
+\end{figure}
+
+As shown in Figure~\ref{fig:baseline}, the proposed method achieves higher
+routing reliability because routing decisions are continuously adapted
+according to the current temporal state of entanglement links.
+
+
+\section{Ablation Study}
+
+An ablation study is performed to analyze the contribution of different
+components in the proposed framework.
+
+Three configurations are evaluated:
+
+\begin{enumerate}
+    \item Static baseline without temporal adaptation;
+    \item Adaptive routing without regeneration;
+    \item Complete proposed framework with temporal awareness and regeneration.
+\end{enumerate}
+
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\textwidth]
+{figures/ablation_comparison.png}
+\caption{Ablation study showing the contribution of each framework component.}
+\label{fig:ablation}
+\end{figure}
+
+
+The results indicate that temporal awareness improves route selection,
+while regeneration provides additional recovery capability for expired
+entanglement links.
+
+
+\section{Multi-Seed Validation}
+
+To verify the robustness of the proposed framework, experiments are
+repeated using multiple random seeds.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\textwidth]
+{figures/multi_seed_comparison.png}
+\caption{Performance stability under different random seeds.}
+\label{fig:multiseed}
+\end{figure}
+
+
+The results show that the proposed framework maintains consistent
+performance across different network realizations, demonstrating its
+robustness and reliability.
+
+
+\section{Regeneration Capability Analysis}
+
+The impact of entanglement regeneration is investigated by changing the
+regeneration budget.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\textwidth]
+{figures/regeneration_by_slot.png}
+\caption{Temporal evolution of entanglement regeneration events.}
+\label{fig:regeneration}
+\end{figure}
+
+
+The regeneration mechanism improves routing availability by restoring
+expired links and increasing the probability of successful entanglement
+distribution.
+
+
+\section{Scalability Evaluation}
+
+The scalability of the proposed framework is evaluated by increasing the
+network size.
+
+The results demonstrate that the proposed routing strategy maintains
+stable performance when the network scale increases.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\textwidth]
+{figures/network_size_acceptance_ratio.png}
+\caption{Scalability evaluation with increasing network size.}
+\label{fig:scalability}
+\end{figure}
+
+
+\section{Summary}
+
+The experimental results confirm that the proposed Temporal-State-Aware
+Routing Framework improves quantum network reliability by jointly
+considering temporal link conditions and regeneration capability.
+
+The proposed approach achieves better routing performance, higher
+robustness, and improved scalability compared with static routing
+strategies.

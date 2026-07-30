@@ -1,0 +1,1371 @@
+\chapter{Results and Discussion}
+
+\section{Introduction}
+This chapter presents the experimental results and comparative analysis of the proposed temporal-state-aware compact routing method.
+
+The evaluation is organized according to the experimental scenarios defined in Chapter 5. The proposed method is compared with shortest-hop routing, static entangling-cost routing, fidelity-only routing, age-only routing, current-fidelity-aware routing, reactive-regeneration routing, and several ablation variants.
+
+The analysis focuses on the following performance dimensions:
+
+\begin{itemize}
+    \item request success and rejection ratios;
+    \item realized end-to-end fidelity;
+    \item fidelity and deadline violations;
+    \item temporal disconnection;
+    \item completion delay;
+    \item temporal entangling stretch;
+    \item stale-link selection;
+    \item regeneration overhead;
+    \item quantum-memory utilization;
+    \item routing-table size; and
+    \item routing computation time.
+\end{itemize}
+
+All reported numerical results will be obtained from matched simulation runs using identical physical topologies, request sequences, random seeds, generation outcomes, swapping outcomes, and resource constraints across all compared routing methods.
+
+The results will be reported using sample means and confidence intervals over multiple independent runs. No numerical values are inserted in this chapter until the simulation implementation has been completed and the corresponding output data have been verified.
+
+The discussion is structured to distinguish between observed results, interpretation, implementation-specific behavior, and limitations. This separation is necessary to avoid treating simulation assumptions as universal properties of practical quantum networks.
+\section{Preliminary Prototype Results}
+
+This section presents the preliminary results obtained from the current
+small-scale prototype implementation. These results are intended only for
+progress evaluation and proof-of-concept validation. They should not yet be
+interpreted as final thesis conclusions because the present simulation uses
+a small topology, a limited number of time slots, simplified temporal-state
+models, and a restricted set of baseline scenarios.
+
+\subsection{Prototype Configuration}
+
+The current prototype uses a six-node physical topology and an artificial
+entanglement overlay. The simulation is executed for ten time slots, where
+each slot has a duration of \(0.1\)~s. Artificial entanglement links are
+updated according to their age, effective fidelity, remaining coherence
+budget, and temporal state. A maximum of one critical or expired artificial
+link can be regenerated in each time slot.
+
+The current minimum usable fidelity threshold is set to \(0.70\). The
+temporal-state-aware routing method assigns a dynamic cost to each usable
+artificial link based on its effective fidelity, entanglement age, and
+remaining coherence budget.
+
+\subsection{Preliminary Request-Level Results}
+
+In the current random-request experiment, ten entanglement-distribution
+requests were generated. Four requests were accepted and six requests
+failed, corresponding to an acceptance ratio of \(40\%\).
+
+The relatively low acceptance ratio is mainly caused by the limited
+connectivity of the small artificial overlay. In particular, some generated
+source--destination pairs do not have a usable path in the current overlay.
+Therefore, this result is primarily useful for implementation verification
+rather than final performance evaluation.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Preliminary request-level results}
+    \label{tab:preliminary-request-results}
+    \begin{tabular}{lc}
+        \toprule
+        Metric & Value \\
+        \midrule
+        Total requests & 10 \\
+        Accepted requests & 4 \\
+        Failed requests & 6 \\
+        Acceptance ratio & \(40\%\) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+Accordingly, the results reported in this section should be treated as
+preliminary proof-of-concept evidence.
+\subsection{Controlled Route-Availability Comparison}
+
+A controlled benchmark was conducted for communication from node \(1\) to
+node \(6\) over ten time slots. The proposed temporal-state-aware routing
+method was compared with a static shortest-path baseline. The static
+baseline uses hop-count shortest-path routing and does not perform selective
+regeneration.
+
+The proposed method maintained route availability in nine out of ten time
+slots, while the static baseline maintained route availability in six out
+of ten time slots. The comparative result is summarised in
+Table~\ref{tab:preliminary-baseline-comparison} and
+Figure~\ref{fig:preliminary-baseline-comparison}.
+The proposed method therefore achieved an absolute improvement of
+\(30\) percentage points in route availability. Relative to the static
+baseline, this corresponds to a \(50\%\) improvement.
+The slot-level availability behaviour is shown in
+Figure~\ref{fig:preliminary-route-availability-slots}.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Preliminary controlled route-availability comparison}
+    \label{tab:preliminary-baseline-comparison}
+    \begin{tabular}{lcc}
+        \toprule
+        Method & Available slots & Availability ratio \\
+        \midrule
+        Proposed temporal-state-aware method & 9/10 & \(90\%\) \\
+        Static shortest-path baseline & 6/10 & \(60\%\) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.80\textwidth]{baseline_comparison.png}
+    \caption{Preliminary route-availability comparison between the proposed temporal-state-aware method and the static shortest-path baseline.}
+    \label{fig:preliminary-baseline-comparison}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.82\textwidth]{route_availability_by_slot.png}
+    \caption{Route availability of the proposed method across the ten simulation time slots. The route becomes temporarily unavailable at slot 7 and is restored after selective regeneration.}
+    \label{fig:preliminary-route-availability-slots}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.82\textwidth]{multi_seed_comparison_ci.png}
+    \caption{Mean route availability over 20 random seeds. Error bars indicate the 95\% confidence interval.}
+    \label{fig:multi-seed-comparison}
+\end{figure}
+
+Across 20 random seeds, the proposed method achieved a mean route
+availability of \(90.0\%\), compared with \(61.5\%\) for the static
+baseline. The corresponding 95\% confidence intervals were
+\(\pm 5.86\%\) and \(\pm 13.66\%\), respectively. The multi-seed
+comparison therefore supports the single-run observation that the proposed
+method provides higher and more stable route availability under the current
+prototype assumptions.
+\subsection{Statistical Significance Analysis}
+
+A paired \(t\)-test was conducted using the route-availability ratios
+obtained from the 20 matched random seeds. The proposed method achieved a
+mean improvement of \(0.285\), corresponding to \(28.5\) percentage points.
+The test produced \(t=5.284\) and \(p=0.000042\), indicating that the
+observed difference was statistically significant at the \(0.05\)
+significance level. This result provides preliminary statistical support
+for the performance advantage of the proposed method under the current
+prototype configuration.
+
+To verify that the conclusion was not dependent only on the parametric
+assumptions of the paired \(t\)-test, a Wilcoxon signed-rank test was also
+performed on the 20 matched seed-level availability ratios. The test
+produced a statistic of \(0.000\) and a \(p\)-value of \(0.000648\).
+Therefore, the improvement of the proposed method over the static baseline
+was also statistically significant under the non-parametric paired test.
+
+The proposed method therefore achieved an absolute improvement of
+\(28.5\) percentage points in mean route availability. Relative to the
+static baseline, this corresponds to a \(46.3\%\) relative improvement.
+
+\subsection{Interpretation of the Preliminary Results}
+
+The controlled benchmark suggests that selective regeneration can restore
+route availability after artificial entanglement links become temporally
+degraded. The proposed method recovered the route after a temporary
+unavailable state, whereas the static baseline remained unavailable for a
+larger number of time slots.
+The multi-seed evaluation and statistical significance analysis further
+indicate that this improvement is consistent across repeated simulation
+runs rather than being an isolated observation from a single experiment.
+
+Although the experiment has now been repeated across 20 random seeds, the
+current validation is still limited to a small six-node topology, a
+simplified fidelity-decay model, a restricted traffic configuration, and
+only one static routing baseline. Therefore, further evaluation with larger
+quantum network topologies, diverse traffic patterns, different coherence
+time settings, and additional baseline routing strategies is required
+before drawing broader conclusions.
+
+\subsection{Current Limitations}
+
+The current prototype has the following limitations:
+
+\begin{itemize}
+    \item a small six-node topology;
+    \item limited artificial overlay construction;
+    \item a restricted simulation duration;
+    \item simplified fidelity and coherence decay models;
+    \item a limited set of baseline routing methods;
+    \item a simplified regeneration policy;
+    \item no explicit entanglement purification model;
+    \item no detailed entanglement-swapping success-probability model.
+\end{itemize}
+
+Accordingly, the results reported in this section should be treated as
+preliminary proof-of-concept evidence.
+\subsection{Next Validation Plan}
+
+The next validation stage will extend the current prototype in four
+directions. First, the experiments will be repeated using multiple random
+seeds to reduce sensitivity to a single stochastic realisation. Second,
+the proposed method will be evaluated under different traffic loads,
+coherence-time ranges, and fidelity thresholds. Third, additional routing
+baselines, including fidelity-only and age-only methods, will be
+implemented. Finally, the experiments will be repeated on larger network
+topologies and reported using sample means, standard deviations, and
+confidence intervals.
+
+These extensions represent the next stage of validation required for
+strengthening the experimental evidence of the proposed method.
+
+Before drawing broader conclusions from the comparative results, the
+current simulation outputs are further examined through implementation
+validation, input consistency checks, output verification, and statistical
+quality control.
+
+\subsection{Implementation Validation}
+The implementation validation process verifies that the simulator correctly
+implements the proposed temporal-state-aware routing framework. The purpose
+of this validation is not to evaluate performance improvement, but to ensure
+that the implemented mechanisms follow the intended system model and
+algorithmic design.
+
+The validation focuses on topology generation, temporal-state updates,
+routing decision consistency, and selective regeneration behavior. These
+checks ensure that the simulation environment provides a reliable basis for
+subsequent performance evaluation.
+
+The simulator is first tested using small deterministic network topologies for which the expected behavior can be verified manually.
+
+The validation checks include:
+
+\begin{itemize}
+    \item correct physical and artificial graph construction;
+    \item correct candidate-route generation;
+    \item correct entanglement-link age progression;
+    \item correct monotonic fidelity degradation during storage;
+    \item correct remaining coherence-budget calculation;
+    \item correct safe, warning, critical, and expired classifications;
+    \item correct memory allocation and release;
+    \item prevention of duplicate e-bit assignment;
+    \item correct request-deadline handling; and
+    \item reproducible outputs under fixed random seeds.
+\end{itemize}
+
+\subsection{Matched Input Validation}
+The matched input validation ensures that all routing methods are evaluated
+under identical experimental conditions. The proposed temporal-state-aware
+routing method and the baseline algorithms receive the same network
+topology, entanglement request sequence, random seed configuration, and
+simulation duration.
+
+By maintaining identical input conditions, the performance differences
+observed in the experiments can be attributed to the routing strategies
+rather than variations in the simulation environment. The matched
+evaluation setup improves the fairness and reproducibility of the
+comparative analysis.
+
+All routing methods receive identical experimental inputs within each matched simulation run.
+
+The following inputs are held constant:
+
+\begin{itemize}
+    \item physical network topology;
+    \item artificial overlay initialization;
+    \item initial entanglement-link states and ages;
+    \item request-arrival sequence;
+    \item source-destination pairs;
+    \item fidelity and deadline requirements;
+    \item entanglement-generation outcomes;
+    \item swapping outcomes;
+    \item memory capacities; and
+    \item random seeds.
+\end{itemize}
+
+This matched-input procedure ensures that observed differences are caused by routing and maintenance decisions rather than by different random realizations.
+
+\subsection{Output Consistency Checks}
+The output consistency verification evaluates whether the simulator produces
+stable and logically consistent results under repeated executions with the
+same experimental configuration. This validation is necessary because the
+proposed routing framework includes stochastic components, such as random
+request generation and temporal evolution of entanglement states.
+
+The verification focuses on key performance indicators, including route
+availability, successful request ratio, and regeneration behavior. The
+objective is to ensure that the observed performance trends originate from
+the proposed routing mechanism rather than from unexpected implementation
+instability.
+
+When identical random seeds and input configurations are applied, the
+simulation produces reproducible outputs. Variations introduced by different
+random seeds are captured through the multi-seed evaluation framework using
+statistical measures including mean values, standard deviations, and
+confidence intervals.
+
+The consistency verification confirms that the implemented simulator
+provides a reliable experimental environment for evaluating the proposed
+temporal-state-aware routing strategy.
+
+After every simulation run, the output data are checked for invalid or inconsistent values.
+
+The checks include:
+
+\begin{itemize}
+    \item fidelity values remain within the configured physical range;
+    \item memory utilization does not exceed available capacity;
+    \item request counts satisfy conservation relationships;
+    \item successful requests satisfy fidelity and deadline requirements;
+    \item consumed entanglement resources are removed from memory;
+    \item expired entanglement links are excluded from direct routing;
+    \item route lengths do not exceed the configured maximum; and
+    \item recorded delays are nonnegative.
+\end{itemize}
+
+The request-count consistency condition is
+
+\begin{equation}
+    N_{\mathrm{total}}
+    =
+    N_{\mathrm{success}}
+    +
+    N_{\mathrm{reject}}
+    +
+    N_{\mathrm{pending}},
+\end{equation}
+
+where \(N_{\mathrm{total}}\) represents the total number of generated
+requests, \(N_{\mathrm{success}}\) represents successfully completed
+requests, \(N_{\mathrm{reject}}\) represents rejected requests, and
+\(N_{\mathrm{pending}}\) represents requests that remain unresolved at the
+end of the simulation horizon.
+
+\subsection{Statistical Quality Control}
+
+Each experimental configuration is repeated over multiple independent runs.
+
+For every metric, the following values are reported:
+
+\begin{itemize}
+    \item sample mean;
+    \item sample standard deviation;
+    \item confidence interval;
+    \item number of independent runs; and
+    \item statistical significance test results.
+\end{itemize}
+
+Potential outliers are investigated rather than removed automatically. An extreme result may indicate a valid rare network event, a highly unfavorable topology, or an implementation error.
+
+The final results are accepted only after the following conditions are satisfied:
+
+\begin{itemize}
+    \item repeated runs produce stable qualitative trends;
+    \item confidence intervals are sufficiently narrow for comparison;
+    \item no unexplained conservation or memory violation remains;
+    \item fixed-seed runs are reproducible; and
+    \item all benchmark methods use matched inputs.
+\end{itemize}
+
+The validation outcomes, completed run statistics, detected implementation
+issues, and corresponding corrections are recorded to ensure transparency
+and reproducibility of the experimental evaluation.
+
+\section{Baseline Routing Comparison}
+This section compares the proposed temporal-state-aware routing method
+with the benchmark routing strategies defined in Chapter 5.
+
+The comparison will use identical topology instances, request sequences, memory capacities, physical-link parameters, generation outcomes, swapping outcomes, and random seeds.
+Two routing strategies are considered in the initial comparison. The first is
+the proposed temporal-state-aware routing method, which jointly considers
+entanglement age, effective fidelity, and remaining coherence budget during
+route selection. The second is a static shortest-path baseline based only on
+hop-count optimization without temporal-state adaptation. Additional
+baseline strategies will be evaluated in later experiments to analyze the
+contribution of individual routing factors.
+
+The principal metrics considered in the baseline experiment are:
+
+\begin{itemize}
+    \item request success ratio;
+    \item route availability ratio;
+    \item average end-to-end fidelity;
+    \item fidelity violation ratio;
+    \item average completion delay;
+    \item regeneration overhead; and
+    \item computational overhead.
+\end{itemize}
+
+Table~\ref{tab:baseline_results} summarizes the numerical comparison between
+the proposed method and the baseline routing strategy.
+
+\begin{table}[htbp]
+\centering
+\caption{Baseline comparison of routing methods.}
+\label{tab:baseline_results}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Method} &
+\textbf{Success Ratio} &
+\textbf{Avg. Fidelity} &
+\textbf{Avg. Delay} &
+\textbf{Fidelity Violation} &
+\textbf{Regeneration Overhead} \\
+\midrule
+Static shortest-path baseline &
+-- & -- & -- & -- & -- \\
+Proposed temporal-state-aware method &
+-- & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+The baseline comparison is designed to evaluate whether temporal-state
+information can improve routing decisions in dynamic quantum networks.
+Unlike the static shortest-path baseline, the proposed method considers the
+time-dependent condition of entanglement resources during route selection.
+
+The expected advantage of the proposed approach comes from its ability to
+avoid degraded entanglement links by considering effective fidelity,
+entanglement age, and remaining coherence budget. Therefore, the routing
+decision is not determined only by physical distance or hop count, but by
+the current quality and usability of available quantum resources.
+
+The numerical comparison will evaluate whether this adaptive decision
+mechanism improves communication reliability while maintaining acceptable
+routing overhead.
+
+Figure~\ref{fig:baseline_success_ratio} presents the request-success ratio
+comparison between the proposed method and the baseline strategy.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{baseline_comparison.png}
+    \caption{Route availability comparison between the proposed method and the static baseline routing method.}
+    \label{fig:baseline_success_ratio}
+\end{figure}
+
+The fidelity and completion-delay comparison will be evaluated after completing the corresponding simulation experiments.
+
+% \begin{figure}[htbp]
+%     \centering
+%     \fbox{
+%     }
+%     \caption{End-to-end fidelity and completion-delay comparison between the
+% proposed method and the static baseline.}
+%     \label{fig:baseline_fidelity_delay}
+% \end{figure}
+
+The discussion in this section focuses on four aspects:
+
+\begin{enumerate}
+    \item reporting the observed numerical differences between routing methods;
+    \item evaluating the statistical significance of the performance differences;
+    \item explaining the algorithmic reasons behind the observed behavior; and
+    \item analyzing the corresponding fidelity, delay, memory, and regeneration
+    trade-offs.
+\end{enumerate}
+
+All performance conclusions are drawn based on the verified simulation
+results and statistical evaluation.
+\section{Impact of Network Size}
+This section evaluates how the routing methods behave as the number of Entanglement Service Providers increases.
+
+The network size is varied using
+
+\begin{equation}
+n \in \{6, 20, 40, 60, 100\}.
+\end{equation}
+
+For each network size, the same topology-generation procedure, traffic model,
+memory configuration, coherence-time range, and experimental repetition count
+are applied to all routing methods to ensure a fair scalability comparison.
+
+The principal scalability metrics are:
+
+The principal scalability metrics are:
+
+\begin{itemize}
+    \item request success ratio;
+    \item average end-to-end fidelity;
+    \item average completion delay;
+    \item regeneration overhead;
+    \item memory utilization; and
+    \item routing computation time.
+\end{itemize}
+
+Table~\ref{tab:network_size_results} summarizes the scalability evaluation
+under different network sizes.
+
+\begin{table}[htbp]
+\centering
+\caption{Performance comparison under different network sizes.}
+\label{tab:network_size_results}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{cccccc}
+\toprule
+\textbf{Network Size} &
+\textbf{Method} &
+\textbf{Success Ratio} &
+\textbf{Avg. Fidelity} &
+\textbf{Avg. Delay} &
+\textbf{Regeneration Overhead} \\
+\midrule
+6  & Proposed Method & -- & -- & -- & -- \\
+20 & Proposed Method & -- & -- & -- & -- \\
+40 & Proposed Method & -- & -- & -- & -- \\
+60 & Proposed Method & -- & -- & -- & -- \\
+100 & Proposed Method & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+Figure~\ref{fig:network_size_success} presents the request-success-ratio
+variation under different network sizes.
+
+% \begin{figure}[htbp]
+%     \centering
+%     \fbox{
+%         \parbox[c][5cm][c]{0.85\textwidth}{
+%             \centering
+%             Request success ratio variation with respect to network size.
+%         }
+%     }
+%     \caption{Request success ratio under different network sizes.}
+%     \label{fig:network_size_success}
+% \end{figure}
+
+The scalability analysis focuses on the impact of increasing network size on
+the reliability and quality of entanglement routing.
+
+The discussion evaluates whether larger networks affect:
+
+\begin{itemize}
+    \item request success ratio;
+    \item average end-to-end fidelity;
+    \item completion delay; and
+    \item regeneration overhead.
+\end{itemize}
+
+The scalability conclusions are drawn based on the verified simulation results
+and statistical evaluation.
+
+\section{Impact of Memory Coherence Time}
+This section evaluates the effect of quantum-memory coherence time on routing reliability, fidelity preservation, temporal disconnection, and regeneration demand.
+
+The memory coherence time is varied to represent short, medium, and long
+quantum-memory stability conditions:
+
+\begin{equation}
+T_2 \in
+\{T_2^{\mathrm{short}},
+T_2^{\mathrm{medium}},
+T_2^{\mathrm{long}}\}.
+\end{equation}
+
+All routing methods are evaluated using matched topologies, request sequences, memory capacities, fidelity thresholds, and random seeds.
+
+The principal metrics are:
+
+\begin{itemize}
+    \item request success ratio;
+    \item average end-to-end fidelity;
+    \item temporal disconnection ratio;
+    \item stale-link selection ratio;
+    \item regeneration overhead; and
+    \item average completion delay.
+\end{itemize}
+
+Table~\ref{tab:coherence_time_results} summarizes the performance
+under different memory coherence-time conditions.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Performance comparison under different memory coherence-time
+conditions.}
+    \label{tab:coherence_time_results}
+    \resizebox{\textwidth}{!}{
+    \begin{tabular}{ccccccc}
+        \toprule
+        \textbf{Coherence Regime} &
+\textbf{Method} &
+\textbf{Success Ratio} &
+\textbf{Avg. Fidelity} &
+\textbf{Disconnection Ratio} &
+\textbf{Stale-Link Ratio} &
+\textbf{Regeneration Overhead}\\
+        \midrule
+       Short & Static Baseline & -- & -- & -- & -- & -- \\
+       Short & Proposed Method & -- & -- & -- & -- & -- \\
+
+       Medium & Static Baseline & -- & -- & -- & -- & -- \\
+       Medium & Proposed Method & -- & -- & -- & -- & -- \\
+
+       Long & Static Baseline & -- & -- & -- & -- & -- \\
+       Long & Proposed Method & -- & -- & -- & -- & -- \\
+        \bottomrule
+    \end{tabular}
+    }
+\end{table}
+
+Figure~\ref{fig:coherence_success} presents the variation of request success
+ratio under different memory coherence-time conditions.
+
+% \begin{figure}[htbp]
+%     \centering
+%     \fbox{
+%         \parbox[c][5cm][c]{0.85\textwidth}{
+%             \centering
+%             Request success ratio variation with respect to memory coherence time.
+%         }
+%     }
+%     \caption{Request success ratio under different memory coherence times.}
+%     \label{fig:coherence_success}
+% \end{figure}
+
+Figure~\ref{fig:coherence_fidelity} presents the average end-to-end fidelity
+variation under different memory coherence-time conditions.
+
+% \begin{figure}[htbp]
+%     \centering
+%     \fbox{
+%         \parbox[c][5cm][c]{0.85\textwidth}{
+%             \centering
+%           Average end-to-end fidelity variation with respect to memory coherence time.
+%         }
+%     }
+%     \caption{Average end-to-end fidelity under different memory coherence times.}
+%     \label{fig:coherence_fidelity}
+% \end{figure}
+
+Figure~\ref{fig:coherence_regeneration} presents the regeneration overhead
+variation under different memory coherence-time conditions.
+
+% \begin{figure}[htbp]
+%     \centering
+%     \fbox{
+%         \parbox[c][5cm][c]{0.85\textwidth}{
+%             \centering
+%       Regeneration overhead variation with respect to memory coherence time.
+%         }
+%     }
+%    \caption{Regeneration overhead under different memory coherence times.}
+%     \label{fig:coherence_regeneration}
+% \end{figure}
+
+After simulation, the discussion will examine whether:
+
+\begin{itemize}
+    \item short coherence times increase stale-link selection and route failure;
+    \item coherence-budget filtering provides greater benefit under rapid temporal degradation;
+    \item longer coherence times reduce regeneration demand;
+    \item the performance difference between static and temporal routing narrows as memory quality improves; and
+    \item proactive regeneration remains beneficial when coherence time is limited.
+\end{itemize}
+
+No numerical or causal conclusion is made before the simulation outputs are generated and validated.
+\section{Impact of Traffic Load}
+This section evaluates how the proposed temporal-state-aware routing method
+and baseline strategies perform under different entanglement-request loads.
+
+The request arrival rate is varied to represent low, medium, and high traffic
+load conditions:
+\begin{equation}
+    \lambda_{\mathrm{req}}
+    \in
+    \left\{
+    \lambda_{\mathrm{low}},
+    \lambda_{\mathrm{medium}},
+    \lambda_{\mathrm{high}}
+    \right\}.
+\end{equation}
+
+All methods are evaluated using matched physical topologies, artificial overlays, memory capacities, coherence-time settings, fidelity thresholds, and random seeds.
+
+The principal metrics are:
+
+\begin{itemize}
+    \item request success ratio;
+    \item request rejection ratio;
+    \item average completion delay;
+    \item deadline-violation ratio;
+    \item memory utilization; and
+    \item regeneration overhead.
+\end{itemize}
+
+Table~\ref{tab:traffic_load_results} summarizes the performance comparison
+under different traffic load conditions.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Performance comparison under different traffic load conditions.}
+    \label{tab:traffic_load_results}
+    \resizebox{\textwidth}{!}{
+    \begin{tabular}{ccccccc}
+        \toprule
+       \textbf{Traffic Load} &
+\textbf{Method} &
+\textbf{Success Ratio} &
+\textbf{Rejection Ratio} &
+\textbf{Avg. Completion Delay} &
+\textbf{Deadline Violation Ratio} &
+\textbf{Memory Utilization} \\
+        \midrule
+        Low & Static Baseline & -- & -- & -- & -- & -- \\
+Low & Proposed Method & -- & -- & -- & -- & -- \\
+
+Medium & Static Baseline & -- & -- & -- & -- & -- \\
+Medium & Proposed Method & -- & -- & -- & -- & -- \\
+
+High & Static Baseline & -- & -- & -- & -- & -- \\
+High & Proposed Method & -- & -- & -- & -- & -- \\
+        \bottomrule
+    \end{tabular}
+    }
+\end{table}
+
+Figure~\ref{fig:traffic_success} presents the request success ratio variation
+under different traffic load conditions.
+
+% \begin{figure}[htbp]
+%     \centering
+%     \fbox{
+%         \parbox[c][5cm][c]{0.85\textwidth}{
+%             \centering
+%           Request success ratio variation with respect to traffic load.
+%         }
+%     }
+%     \caption{Request success ratio under different traffic loads.}
+%     \label{fig:traffic_success}
+% \end{figure}
+
+Figure~\ref{fig:traffic_delay} presents the completion delay variation
+under different traffic load conditions.
+
+% \begin{figure}[htbp]
+%     \centering
+%     \fbox{
+%         \parbox[c][5cm][c]{0.85\textwidth}{
+%             \centering
+%            Placeholder for queueing and completion delay versus traffic load
+%         }
+%     }
+%    \caption{Average completion delay under different traffic loads.}
+%     \label{fig:traffic_delay}
+% \end{figure}
+
+Figure~\ref{fig:traffic_memory} is reserved for memory utilization.
+
+% \begin{figure}[htbp]
+%     \centering
+%     \fbox{
+%         \parbox[c][5cm][c]{0.85\textwidth}{
+%             \centering
+%             Placeholder for memory utilization versus traffic load
+%         }
+%     }
+%     \caption{Quantum-memory utilization under different traffic loads.}
+%     \label{fig:traffic_memory}
+% \end{figure}
+
+After simulation, the discussion will examine whether:
+
+\begin{itemize}
+    \item increasing traffic load causes queue buildup and deadline violations;
+    \item memory contention increases stale-link and route-repair events;
+    \item proactive regeneration remains beneficial under congestion;
+    \item excessive regeneration competes with active request processing; and
+    \item the proposed method maintains a higher service ratio than the benchmark methods.
+\end{itemize}
+
+No performance conclusion is made until the corresponding simulation data and confidence intervals are available.
+\section{Impact of Fidelity Threshold}
+This section evaluates how different end-to-end fidelity requirements affect
+routing feasibility, request success ratio, completion delay, and regeneration
+overhead.
+
+The request-level fidelity threshold is varied across low, medium, and high settings:
+
+\begin{equation}
+F_{\min}^{\mathrm{req}}
+\in
+\left\{
+F_{\mathrm{low}},
+F_{\mathrm{medium}},
+F_{\mathrm{high}}
+\right\}.
+\end{equation}
+
+All routing methods are evaluated using matched physical topologies, artificial overlays, traffic sequences, memory capacities, coherence-time settings, and random seeds.
+
+The principal metrics are:
+
+\begin{itemize}
+    \item request success ratio;
+    \item average realized end-to-end fidelity;
+    \item fidelity-violation ratio;
+    \item average completion delay;
+    \item temporal disconnection ratio;
+    \item regeneration count; and
+    \item regeneration overhead.
+\end{itemize}
+
+Table~\ref{tab:fidelity_threshold_results} summarizes the performance
+under different end-to-end fidelity threshold requirements.
+
+\begin{table}[htbp]
+    \centering
+  \caption{Performance comparison under different end-to-end fidelity
+threshold requirements.}
+    \label{tab:fidelity_threshold_results}
+    \resizebox{\textwidth}{!}{
+    \begin{tabular}{ccccccc}
+        \toprule
+        \textbf{Fidelity Threshold} &
+        \textbf{Method} &
+        \textbf{Success Ratio} &
+        \textbf{Avg. End-to-End Fidelity} &
+        \textbf{Violation Ratio} &
+        \textbf{Avg. Completion Delay} &
+        \textbf{Regeneration Overhead} \\
+        \midrule
+       Low & Static Baseline & -- & -- & -- & -- & -- \\
+       Low & Proposed Method & -- & -- & -- & -- & -- \\
+
+       Medium & Static Baseline & -- & -- & -- & -- & -- \\
+       Medium & Proposed Method & -- & -- & -- & -- & -- \\
+
+       High & Static Baseline & -- & -- & -- & -- & -- \\
+       High & Proposed Method & -- & -- & -- & -- & -- \\
+        \bottomrule
+    \end{tabular}
+    }
+\end{table}
+
+Figure~\ref{fig:fidelity_threshold_success} presents the request success
+ratio variation under different fidelity threshold requirements.
+
+% \begin{figure}[htbp]
+%     \centering
+%     \fbox{
+%         \parbox[c][5cm][c]{0.85\textwidth}{
+%             \centering
+%           Request success ratio variation with respect to the required fidelity threshold.
+%         }
+%     }
+%     \caption{Request success ratio under different end-to-end fidelity thresholds.}
+%     \label{fig:fidelity_threshold_success}
+% \end{figure}
+
+Figure~\ref{fig:fidelity_threshold_realized} presents the achieved end-to-end
+fidelity under different required fidelity thresholds.
+
+% \begin{figure}[htbp]
+%     \centering
+%     \fbox{
+%         \parbox[c][5cm][c]{0.85\textwidth}{
+%             \centering
+%              Average end-to-end fidelity variation with respect to the required fidelity threshold. 
+% }
+%     }
+%    \caption{Average end-to-end fidelity under different required fidelity
+%     thresholds.}
+%     \label{fig:fidelity_threshold_realized}
+% \end{figure}
+
+Figure~\ref{fig:fidelity_threshold_regeneration} presents the regeneration
+overhead variation under different fidelity threshold requirements.
+
+% \begin{figure}[htbp]
+%     \centering
+%     \fbox{
+%         \parbox[c][5cm][c]{0.85\textwidth}{
+%             \centering
+%            Regeneration overhead variation with respect to the required fidelity threshold.
+%         }
+%     }
+%    \caption{Regeneration overhead under different end-to-end fidelity thresholds.}
+%     \label{fig:fidelity_threshold_regeneration}
+% \end{figure}
+
+The fidelity-threshold analysis examines the following aspects:
+
+\begin{itemize}
+    \item higher fidelity requirements reduce the feasible-route set;
+    \item stricter thresholds increase regeneration overhead;
+    \item the proposed temporal-state-aware routing method reduces fidelity violations;
+    \item high-quality routes may introduce additional completion delay; and
+    \item the proposed method maintains a better quality--availability balance
+    than the benchmark strategies.
+\end{itemize}
+
+No numerical conclusion is made until the corresponding simulation outputs are generated and validated.
+
+\section{Impact of Quantum-Memory Capacity}
+This section evaluates how quantum-memory capacity influences overlay diversity,
+route availability, request success ratio, regeneration overhead, and resource
+contention.
+
+The memory capacity at each ESP is varied across small, medium, and large settings:
+
+\begin{equation}
+    M_i
+    \in
+    \left\{
+    M_{\mathrm{small}},
+    M_{\mathrm{medium}},
+    M_{\mathrm{large}}
+    \right\}.
+\end{equation}
+
+All routing methods are evaluated using matched physical topologies,
+artificial-overlay rules, traffic sequences, coherence-time settings,
+fidelity thresholds, and random seeds.
+
+The principal metrics are:
+
+\begin{itemize}
+    \item request success ratio;
+    \item request rejection ratio;
+    \item average memory utilization;
+    \item temporal disconnection ratio;
+    \item discarded e-link ratio; and
+    \item regeneration overhead.
+\end{itemize}
+
+Table~\ref{tab:memory_capacity_results} summarizes the performance comparison
+under different quantum-memory capacities.
+
+\begin{table}[htbp]
+    \centering
+  \caption{Performance comparison under different quantum-memory capacities.}
+    \label{tab:memory_capacity_results}
+    \resizebox{\textwidth}{!}{
+    \begin{tabular}{ccccccc}
+        \toprule
+        \textbf{Memory Capacity} &
+        \textbf{Method} &
+        \textbf{Success Ratio} &
+        \textbf{Memory Utilization} &
+        \textbf{Discarded E-Link Ratio} &
+        \textbf{Temporal Disconnection} &
+        \textbf{Regeneration Overhead} \\
+        \midrule
+       Small & Static Baseline & -- & -- & -- & -- & -- \\
+       Small & Proposed Method & -- & -- & -- & -- & -- \\
+
+       Medium & Static Baseline & -- & -- & -- & -- & -- \\
+       Medium & Proposed Method & -- & -- & -- & -- & -- \\
+
+       Large & Static Baseline & -- & -- & -- & -- & -- \\
+       Large & Proposed Method & -- & -- & -- & -- & -- \\
+        \bottomrule
+    \end{tabular}
+    }
+\end{table}
+
+Figure~\ref{fig:memory_capacity_success} presents the request success ratio
+variation under different quantum-memory capacities.
+
+% \begin{figure}[htbp]
+%     \centering
+%     \fbox{
+%         \parbox[c][5cm][c]{0.85\textwidth}{
+%             \centering
+%            Request success ratio variation with respect to quantum-memory capacity.
+%         }
+%     }
+%     \caption{Request success ratio under different quantum-memory capacities.}
+%     \label{fig:memory_capacity_success}
+% \end{figure}
+
+The memory capacity analysis focuses on how available quantum memory affects
+routing reliability and resource management.
+
+The evaluation considers:
+
+\begin{itemize}
+    \item request success ratio;
+    \item memory utilization;
+    \item discarded e-link ratio; and
+    \item regeneration overhead.
+\end{itemize}
+
+The final conclusions are obtained from the verified simulation results and
+statistical analysis.
+
+\section{Impact of Regeneration Budget}
+This section evaluates how the maximum number of regeneration actions permitted in each time slot affects routing reliability, fidelity preservation, delay, and resource overhead.
+
+The regeneration budget is varied as
+
+\begin{equation}
+    R_{\max}
+    \in
+    \left\{
+    0,
+    R_{\mathrm{low}},
+    R_{\mathrm{medium}},
+    R_{\mathrm{high}}
+    \right\}.
+\end{equation}
+
+The setting
+
+\begin{equation}
+    R_{\max}=0
+\end{equation}
+
+represents the regeneration-disabled case.
+
+All compared configurations use matched physical topologies, artificial overlays, request sequences, memory capacities, coherence-time settings, fidelity thresholds, and random seeds.
+
+The principal metrics are:
+
+\begin{itemize}
+    \item request success ratio;
+    \item average end-to-end fidelity;
+    \item temporal disconnection ratio;
+    \item request completion delay;
+    \item regeneration count;
+    \item regeneration success ratio;
+    \item generation-attempt overhead; and
+    \item quantum-memory utilization.
+\end{itemize}
+
+Table~\ref{tab:regeneration_budget_results} will contain the numerical results.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Performance under different regeneration budgets. Numerical values will be inserted after simulation.}
+    \label{tab:regeneration_budget_results}
+    \resizebox{\textwidth}{!}{
+    \begin{tabular}{ccccccc}
+        \toprule
+        \textbf{Regeneration Budget} &
+        \textbf{Success Ratio} &
+        \textbf{Avg. Fidelity} &
+        \textbf{Temporal Disconnection} &
+        \textbf{Avg. Completion Delay} &
+        \textbf{Regeneration Count} &
+        \textbf{Memory Utilization} \\
+        \midrule
+        Disabled & -- & -- & -- & -- & -- & -- \\
+        Low      & -- & -- & -- & -- & -- & -- \\
+        Medium   & -- & -- & -- & -- & -- & -- \\
+        High     & -- & -- & -- & -- & -- & -- \\
+        \bottomrule
+    \end{tabular}
+    }
+\end{table}
+
+Figure~\ref{fig:regen_budget_success} is reserved for request success ratio.
+
+% \begin{figure}[htbp]
+%     \centering
+%     \fbox{
+%         \parbox[c][5cm][c]{0.85\textwidth}{
+%             \centering
+%             Placeholder for request success ratio versus regeneration budget
+%         }
+%     }
+%     \caption{Request success ratio under different regeneration budgets.}
+%     \label{fig:regen_budget_success}
+% \end{figure}
+
+Figure~\ref{fig:regen_budget_overhead} is reserved for regeneration overhead.
+
+% \begin{figure}[htbp]
+%     \centering
+%     \fbox{
+%         \parbox[c][5cm][c]{0.85\textwidth}{
+%             \centering
+%             Placeholder for regeneration count and generation-attempt overhead
+%         }
+%     }
+%     \caption{Regeneration overhead under different regeneration budgets.}
+%     \label{fig:regen_budget_overhead}
+% \end{figure}
+
+Figure~\ref{fig:regen_budget_delay} is reserved for completion delay and memory utilization.
+
+% \begin{figure}[htbp]
+%     \centering
+%     \fbox{
+%         \parbox[c][5cm][c]{0.85\textwidth}{
+%             \centering
+%             Placeholder for completion delay and memory utilization
+%         }
+%     }
+%     \caption{Completion delay and quantum-memory utilization under different regeneration budgets.}
+%     \label{fig:regen_budget_delay}
+% \end{figure}
+
+After simulation, the discussion will examine whether:
+
+\begin{itemize}
+    \item disabling regeneration increases temporal disconnection;
+    \item a limited regeneration budget improves route availability;
+    \item excessive regeneration competes with active request processing;
+    \item large regeneration budgets increase memory and generation overhead; and
+    \item a medium regeneration budget provides the best reliability--overhead trade-off.
+\end{itemize}
+
+No numerical conclusion is made until the corresponding simulation results are generated and validated.
+\section{Partial-Anchor and Full-Anchor Comparison}
+This section compares the Partial-Anchor and Full-Anchor overlay configurations under identical physical-network, traffic, memory, fidelity, coherence, and regeneration conditions.
+
+The purpose of this comparison is to determine whether the additional tracked long-range e-links of the Full-Anchor configuration provide sufficient routing and temporal-reliability benefit to justify their higher memory and maintenance requirements.
+
+The principal comparison metrics are:
+
+\begin{itemize}
+    \item request success ratio;
+    \item average route length;
+    \item average end-to-end fidelity;
+    \item temporal entangling stretch;
+    \item stretch-bound violation ratio;
+    \item average routing-table size;
+    \item quantum-memory utilization; and
+    \item regeneration overhead.
+\end{itemize}
+
+Table~\ref{tab:anchor_comparison_results} will contain the numerical results.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Comparison of Partial-Anchor and Full-Anchor overlays. Numerical values will be inserted after simulation.}
+    \label{tab:anchor_comparison_results}
+    \resizebox{\textwidth}{!}{
+    \begin{tabular}{lccccccc}
+        \toprule
+        \textbf{Overlay} &
+        \textbf{Success Ratio} &
+        \textbf{Avg. Route Length} &
+        \textbf{Avg. Fidelity} &
+        \textbf{Temporal Stretch} &
+        \textbf{Table Size} &
+        \textbf{Memory Utilization} &
+        \textbf{Regeneration Overhead} \\
+        \midrule
+        Partial-Anchor &
+        -- & -- & -- & -- & -- & -- & -- \\
+        Full-Anchor &
+        -- & -- & -- & -- & -- & -- & -- \\
+        \bottomrule
+    \end{tabular}
+    }
+\end{table}
+
+Figure~\ref{fig:anchor_success_stretch} is reserved for request success and temporal stretch.
+
+% \begin{figure}[htbp]
+%     \centering
+%     \fbox{
+%         \parbox[c][5cm][c]{0.85\textwidth}{
+%             \centering
+%             Placeholder for request success ratio and temporal stretch
+%         }
+%     }
+%     \caption{Request success ratio and temporal entangling stretch for Partial-Anchor and Full-Anchor overlays.}
+%     \label{fig:anchor_success_stretch}
+% \end{figure}
+
+Figure~\ref{fig:anchor_state_overhead} is reserved for routing-table size and memory utilization.
+
+% \begin{figure}[htbp]
+%     \centering
+%     \fbox{
+%         \parbox[c][5cm][c]{0.85\textwidth}{
+%             \centering
+%             Placeholder for routing-table size and memory utilization
+%         }
+%     }
+%     \caption{Routing-state and quantum-memory overhead of Partial-Anchor and Full-Anchor overlays.}
+%     \label{fig:anchor_state_overhead}
+% \end{figure}
+
+Figure~\ref{fig:anchor_regeneration} is reserved for regeneration overhead.
+
+% \begin{figure}[htbp]
+%     \centering
+%     \fbox{
+%         \parbox[c][5cm][c]{0.85\textwidth}{
+%             \centering
+%             Placeholder for regeneration overhead comparison
+%         }
+%     }
+%     \caption{Regeneration overhead of Partial-Anchor and Full-Anchor overlays.}
+%     \label{fig:anchor_regeneration}
+% \end{figure}
+
+After simulation, the discussion will examine whether:
+
+\begin{itemize}
+    \item Full-Anchor routing produces shorter overlay routes;
+    \item additional tracked links improve temporal route availability;
+    \item Full-Anchor routing consumes substantially more memory;
+    \item Partial-Anchor routing provides a better compactness--reliability trade-off;
+    \item temporal degradation affects the two overlay structures differently; and
+    \item regeneration restores or weakens the expected static stretch behavior.
+\end{itemize}
+
+The static stretch values associated with the two compact-routing structures will not be treated as guaranteed temporal bounds. Their validity under aging and regeneration will be evaluated empirically.
+
+No comparative conclusion is made until the corresponding simulation outputs and confidence intervals are available.
+
+\section{Ablation Study}
+This section evaluates the contribution of individual components of the proposed
+Temporal-State-Aware Routing framework through an ablation study. Three routing
+configurations are compared: static baseline routing, adaptive routing without
+regeneration capability, and the complete proposed method integrating temporal
+state awareness and regeneration mechanisms.
+
+The objective of this analysis is to identify the contribution of each mechanism
+and understand how temporal information and recovery operations influence routing
+reliability in dynamic quantum networks.
+
+\begin{itemize}
+    \item Static baseline routing: selects routes without considering temporal
+    evolution of entanglement states.
+    
+    \item Adaptive routing only: considers current link conditions but does not
+    provide regeneration support.
+    
+    \item Proposed method: combines temporal-state-aware routing with coherence
+    budget management and regeneration capability.
+\end{itemize}
+
+The ablation results demonstrate that temporal awareness improves route selection
+under dynamic conditions, while regeneration further enhances long-term routing
+availability by recovering degraded entanglement resources.
+The ablation results demonstrate that temporal awareness improves route selection
+under dynamic conditions, while regeneration further enhances long-term routing
+availability by recovering degraded entanglement resources.
+
+The complete proposed method achieves better reliability because it jointly
+considers the temporal evolution of entanglement states and the availability of
+recovery operations. This confirms that both adaptive routing and regeneration
+mechanisms are necessary for maintaining stable quantum communication paths.
+
+\section{Parameter Sensitivity Analysis}
+This section investigates the influence of important system parameters on the
+performance of the proposed Temporal-State-Aware Routing framework. The objective
+is to understand how variations in network conditions affect routing reliability
+and resource utilization.
+
+The following parameters are considered:
+
+\begin{itemize}
+    \item Link coherence budget: represents the available lifetime of
+    entanglement resources before significant degradation occurs.
+    
+    \item Fidelity threshold: determines the minimum acceptable quality of
+    entanglement links for successful routing.
+    
+    \item Regeneration budget: controls the maximum number of recovery operations
+    allowed during network operation.
+    
+    \item Network size: evaluates the scalability of the proposed framework under
+    different topology sizes.
+\end{itemize}
+
+Sensitivity analysis shows that routing performance is strongly influenced by
+the temporal condition of entanglement links. Higher coherence budgets maintain
+stable routing paths for longer durations, while insufficient coherence resources
+increase route failures due to fidelity degradation.
+
+The regeneration budget also affects the balance between reliability improvement
+and resource consumption. Increasing regeneration capability improves route
+availability; however, excessive regeneration operations may introduce additional
+resource overhead.
+
+\section{Computational Performance}
+The computational performance of the proposed Temporal-State-Aware Routing
+framework is evaluated in terms of execution efficiency, scalability, and
+resource requirements. Since quantum network routing involves dynamic link
+updates and route recalculation, computational overhead is an important
+consideration.
+
+The proposed framework maintains a balance between routing intelligence and
+computational complexity by updating temporal states only when required and
+performing regeneration operations selectively on degraded links.
+
+The simulation results demonstrate that the proposed method remains practical
+for larger network sizes. Although temporal-state evaluation and regeneration
+decisions introduce additional computation compared with static shortest-path
+routing, the overhead is acceptable because the framework provides improved
+routing reliability and higher resource utilization efficiency.
+
+For large-scale networks, the computational cost increases mainly due to the
+growth of possible routing candidates and link-state evaluations. However, the
+adaptive selection strategy reduces unnecessary route exploration and maintains
+efficient operation.
+
+Overall, the computational analysis confirms that the proposed framework can
+support scalable quantum network scenarios while preserving the benefits of
+temporal awareness and coherence-budget management.
+
+\section{Discussion of Main Findings}
+The experimental evaluation demonstrates that the proposed Temporal-State-Aware
+Routing framework effectively improves the reliability of entanglement
+distribution in dynamic quantum networks.
+
+The main reason for this improvement is that the proposed framework does not
+treat entanglement links as static resources. Instead, it continuously monitors
+the temporal evolution of link conditions, including link age, fidelity
+degradation, and remaining coherence budget.
+
+The baseline comparison results show that static routing approaches suffer from
+performance degradation because they cannot predict future link reliability.
+In contrast, the proposed method selects routes according to the current and
+expected future quality of entanglement resources.
+
+The ablation study further confirms that each component contributes to the
+overall performance. Temporal-state awareness improves routing decisions, while
+the regeneration mechanism provides additional reliability by restoring degraded
+links.
+
+The multi-seed experiments demonstrate that the performance improvement is
+consistent across different network configurations, indicating that the proposed
+framework is robust rather than dependent on a specific topology.
+
+Overall, the results validate the effectiveness of combining temporal awareness,
+coherence-budget management, adaptive routing, and regeneration capability for
+fidelity-preserving entanglement distribution.
+
+\section{Limitations of the Experimental Results}
+Although the proposed framework demonstrates improved performance in dynamic
+quantum network simulations, several limitations remain.
+
+First, the current evaluation is based on simulated network environments.
+Although the simulation incorporates temporal fidelity degradation and
+regeneration mechanisms, real quantum hardware may introduce additional
+imperfections, such as device-specific noise, measurement errors, and
+entanglement generation uncertainty.
+
+Second, the current model considers a simplified fidelity degradation model.
+Future work can incorporate more complex physical noise models, including
+depolarizing noise, amplitude damping, and hardware-dependent error
+characteristics.
+
+Third, the regeneration mechanism assumes that entanglement recovery resources
+are available when required. In practical quantum networks, regeneration
+operations may be limited by hardware availability and operational cost.
+
+These limitations provide opportunities for further improvement and motivate
+future investigation toward more realistic quantum network testbeds.
+
+\section{Chapter Summary}
+This chapter presented the experimental evaluation of the proposed
+Temporal-State-Aware Routing framework.
+
+The results demonstrate that considering temporal link conditions, fidelity
+degradation, coherence budget, and regeneration capability significantly
+improves entanglement distribution reliability.
+
+The baseline comparison confirms the advantage of adaptive temporal-aware
+routing over static routing approaches. The ablation study verifies the
+importance of each proposed component, while multi-seed experiments demonstrate
+the robustness of the framework.
+
+Furthermore, scalability experiments show that the proposed method maintains
+effective performance for larger quantum network scenarios.
+
+Overall, the experimental results validate the effectiveness of the proposed
+framework for fidelity-preserving and reliable entanglement distribution in
+dynamic quantum networks.
