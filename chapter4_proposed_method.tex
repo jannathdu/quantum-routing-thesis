@@ -1,9 +1,10 @@
 \chapter{Proposed Temporal-State-Aware Compact Routing Method}
 
 \section{Introduction}
-This chapter presents the proposed temporal-state-aware compact routing method for quantum-native entanglement overlay networks. The method extends compact quantum routing by incorporating the time-varying condition of stored artificial e-links into route selection and overlay maintenance.
 
-The proposed framework is motivated by the observation that an artificial e-link may remain structurally present in the routing table while its practical usefulness deteriorates because of aging, decoherence, fidelity loss, memory waiting time, and delayed consumption. Therefore, a routing decision based only on topological reachability or static entangling cost may select a route that is unlikely to satisfy the required end-to-end fidelity at completion time.
+This chapter presents the proposed temporal-state-aware compact routing method for quantum-native entanglement overlay networks. The method extends compact quantum routing by incorporating the time-dependent state of stored artificial e-links into route selection and overlay-maintenance decisions.
+
+The proposed framework is motivated by the observation that an artificial e-link may remain structurally present in the routing table while its effective routing utility deteriorates because of aging, decoherence, fidelity degradation, memory waiting time, and delayed consumption. Therefore, a routing decision based only on topological reachability or static entangling cost may select a route that is unlikely to satisfy the required end-to-end fidelity at completion time.
 
 The proposed method addresses this limitation through five coordinated operations:
 
@@ -25,7 +26,9 @@ At each time slot, the controller updates the state of every artificial e-link a
     \left[
     x_{ij}(t),
     A_{ij}(t),
+    F_{ij}^{\mathrm{A},0},
     F_{ij}^{\mathrm{eff}}(t),
+    T_{2,ij},
     B_{ij}(t),
     D_{ij}^{\mathrm{regen}},
     C_{ij}^{\mathrm{regen}},
@@ -33,21 +36,20 @@ At each time slot, the controller updates the state of every artificial e-link a
     \right].
 \end{equation}
 
-Based on this state, the controller determines whether an e-link is
+Based on this temporal state, the controller classifies each artificial e-link as
 
 \begin{equation}
+    \mathrm{State}_{ij}(t)
+    \in
+    \{
     \mathrm{Safe},
-    \quad
     \mathrm{Warning},
-    \quad
     \mathrm{Critical},
-    \quad
-    \text{or}
-    \quad
-    \mathrm{Expired}.
+    \mathrm{Expired}
+    \}.
 \end{equation}
 
-Only safe or admissible warning-state links are used directly for route construction. Critical links may trigger route repair or proactive regeneration, while expired links are removed from the temporally usable overlay.
+Only safe or admissible warning-state links are directly considered during route construction. Critical links may trigger route repair or proactive regeneration, whereas expired links are removed from the temporally usable overlay.
 
 The proposed routing process is expressed as
 
@@ -63,21 +65,22 @@ The proposed routing process is expressed as
     \mathrm{Maintain}.
 \end{equation}
 
-The method preserves the compact-routing principle by limiting route discovery to local e-neighbors, anchors, and tracked long-range artificial links. It does not require every ESP to maintain complete global routing information.
+The method preserves the compact-routing principle by limiting route discovery to local e-neighbors, anchor nodes, and tracked long-range artificial links. It does not require every ESP to maintain complete global routing information.
 
-The main design challenge is therefore to improve temporal reliability without converting the compact routing architecture into a fully centralized global-state routing system.
+The main design challenge is therefore to improve temporal reliability without converting the compact-routing architecture into a fully centralized global-state routing system.
 
 This chapter first defines the design objectives and overall framework. It then describes temporal-state monitoring, candidate-route construction, temporal-feasibility filtering, time-dependent route selection, proactive regeneration, overlay maintenance, algorithmic steps, and computational complexity.
 \section{Design Objectives}
-The proposed method is designed to improve the reliability of compact quantum routing without requiring every Entanglement Service Provider to maintain complete global information about the network.
 
-The main design objectives are described below.
+The proposed method is designed to improve the reliability of compact quantum routing by incorporating temporal information of artificial e-links while preserving the scalability advantages of compact routing. The method does not require every Entanglement Service Provider to maintain complete global knowledge of the network state.
+
+The main design objectives are described as follows.
 
 \subsection{Temporal Reliability}
 
-The first objective is to prevent the routing protocol from selecting artificial e-links that are expected to become unusable before route completion.
+The first objective is to prevent the routing protocol from selecting artificial e-links that are structurally available but expected to become unusable before route completion.
 
-For every selected route $R_{s,d}(t)$, the proposed method aims to satisfy
+For every selected route $R_{s,d}(t)$, the proposed method aims to satisfy the coherence-budget constraint
 
 \begin{equation}
     B_{ij}(t)
@@ -89,9 +92,9 @@ For every selected route $R_{s,d}(t)$, the proposed method aims to satisfy
     R_{s,d}(t),
 \end{equation}
 
-where $B_{ij}(t)$ is the remaining coherence budget and $\delta_{\mathrm{safe}}$ is the required safety margin.
+where $B_{ij}(t)$ denotes the remaining coherence budget of artificial e-link $(i,j)$ and $\delta_{\mathrm{safe}}$ represents the required safety margin.
 
-The route must also satisfy the predicted end-to-end fidelity constraint
+In addition, the selected route must satisfy the predicted end-to-end fidelity requirement at the expected completion time:
 
 \begin{equation}
     \widehat{F}_{s,d}^{\mathrm{end}}
@@ -103,11 +106,13 @@ The route must also satisfy the predicted end-to-end fidelity constraint
     F_{\min}^{\mathrm{end}}.
 \end{equation}
 
+These constraints ensure that routing decisions consider future link usability rather than only the current availability state.
+
 \subsection{Fidelity Preservation}
 
-The second objective is to preserve the quality of distributed entanglement by considering both current fidelity and predicted fidelity at the expected consumption time.
+The second objective is to preserve the quality of distributed entanglement by considering both the current fidelity and the predicted fidelity at the expected consumption time.
 
-The routing method therefore avoids selecting a link only because its current fidelity is acceptable. Instead, it evaluates whether the link is expected to remain above the required threshold after additional waiting and swapping delay.
+The routing method therefore avoids selecting an artificial e-link solely because its instantaneous fidelity satisfies the threshold. Instead, it evaluates whether the link quality remains sufficient after additional waiting, coordination, purification, and swapping operations.
 
 The fidelity-preservation objective can be expressed as
 
@@ -120,30 +125,28 @@ The fidelity-preservation objective can be expressed as
     \right).
 \end{equation}
 
-This objective is incorporated into the routing cost rather than optimized independently.
+This objective is incorporated into the proposed time-dependent entangling-cost metric rather than optimized independently. Therefore, high-fidelity and temporally stable routes receive lower routing costs during route selection.
 
 \subsection{Compact Routing-State Preservation}
 
 The proposed method must preserve the compact-routing property of the underlying quantum-native architecture.
 
-Let $\mathcal{T}_i(t)$ denote the routing table maintained by ESP $v_i$. The routing-state objective is
+Let $\mathcal{T}_i(t)$ denote the routing table maintained by ESP $v_i$. The routing-state constraint is defined as
 
 \begin{equation}
     |\mathcal{T}_i(t)|
-    =
-    O
-    \left(
-    \sqrt{n_e}\log n_e
-    \right),
+    \leq
+    c_{\mathrm{tab}}
+    \sqrt{n_e}\log n_e,
 \end{equation}
 
-where $n_e=|V_2|$ is the number of ESPs.
+where $n_e=|V_2|$ represents the number of ESPs.
 
-The method therefore relies on local e-neighbors, anchor information, and selected tracked e-links instead of complete all-pairs routing information.
+The method therefore relies on local e-neighbors, anchor information, and selected tracked e-links instead of maintaining complete all-pairs routing information.
 
 \subsection{Low Route-Selection Cost}
 
-The method aims to select a temporally feasible route with low time-dependent entangling cost.
+The method aims to select a temporally feasible route with minimum time-dependent entangling cost.
 
 For each demand $(s,d)$, the route-selection objective is
 
@@ -158,11 +161,11 @@ For each demand $(s,d)$, the route-selection objective is
     w_t(R).
 \end{equation}
 
-The metric $w_t(R)$ accounts for fidelity degradation, e-link age, coherence-budget risk, regeneration cost, and structural routing cost.
+The metric $w_t(R)$ considers fidelity degradation, e-link age, coherence-budget risk, regeneration cost, and structural routing cost.
 
 \subsection{Controlled Regeneration Overhead}
 
-Frequent regeneration may improve link freshness but can consume substantial quantum-memory capacity, elementary-link attempts, classical coordination time, and Bell-state measurement resources.
+Frequent regeneration may improve temporal freshness but can consume quantum-memory capacity, elementary-link generation resources, classical coordination time, and Bell-state measurement resources.
 
 The proposed method therefore limits the number of regeneration operations in each time slot:
 
@@ -177,11 +180,11 @@ The proposed method therefore limits the number of regeneration operations in ea
     R_{\max}.
 \end{equation}
 
-Regeneration is prioritized for links with high temporal risk and high structural importance.
+Regeneration is prioritized for artificial e-links with high temporal risk and high structural importance.
 
 \subsection{Reduced Request Rejection}
 
-The routing method aims to reduce the number of entanglement requests rejected because of stale links, insufficient coherence budget, or fidelity-threshold violations.
+The routing method aims to reduce entanglement-request rejection caused by stale links, insufficient coherence budget, or fidelity-threshold violations.
 
 Let $N_{\mathrm{reject}}(t)$ denote the number of rejected requests at time $t$. The long-term request-rejection ratio is
 
@@ -203,9 +206,9 @@ The proposed method seeks to minimize this ratio while respecting memory and reg
 
 The artificial overlay may change because of successful generation, consumption, expiration, memory failure, or regeneration.
 
-The method must adapt route selection whenever the state of a relevant e-link changes. However, unnecessary route recomputation should be avoided.
+The method adapts route selection whenever the state of a relevant e-link changes. However, unnecessary route recomputation should be avoided.
 
-A route update is triggered only when at least one of the following occurs:
+A route update is triggered only when at least one of the following conditions occurs:
 
 \begin{itemize}
     \item a selected e-link becomes critical or expired;
@@ -222,24 +225,16 @@ The proposed method should remain computationally practical as the number of ESP
 Instead of solving the complete joint optimization problem at every time slot, the framework separates the decision process into
 
 \begin{equation}
-    \mathrm{State\ Update},
-\end{equation}
-
-\begin{equation}
-    \mathrm{Candidate\ Construction},
-\end{equation}
-
-\begin{equation}
-    \mathrm{Feasibility\ Filtering},
-\end{equation}
-
-and
-
-\begin{equation}
+    \mathrm{State\ Update}
+    \rightarrow
+    \mathrm{Candidate\ Construction}
+    \rightarrow
+    \mathrm{Feasibility\ Filtering}
+    \rightarrow
     \mathrm{Cost\ Based\ Selection}.
 \end{equation}
 
-This decomposition reduces the number of routes that require detailed temporal evaluation.
+This decomposition reduces the number of candidate routes requiring detailed temporal evaluation.
 
 The overall design objective can be summarized as
 
@@ -273,11 +268,9 @@ subject to
     \leq
     M_i,\\
     & |\mathcal{T}_i(t)|
-    =
-    O
-    \left(
-    \sqrt{n_e}\log n_e
-    \right),\\
+    \leq
+    c_{\mathrm{tab}}
+    \sqrt{n_e}\log n_e,\\
     & \sum_{(i,j)}r_{ij}(t)
     \leq
     R_{\max}.
@@ -285,6 +278,7 @@ subject to
 
 Here, $\overline{w}$ is the average selected-route cost, $C_{\mathrm{regen}}$ is the total regeneration overhead, and $\overline{ES}$ is the average temporal entangling stretch.
 \section{Overview of the Proposed Framework}
+
 The proposed framework integrates compact routing, temporal e-link monitoring, fidelity prediction, coherence-budget evaluation, and selective overlay maintenance.
 
 The framework operates in discrete time slots. At the beginning of each time slot, the controller updates the state of every stored artificial e-link and constructs the temporally usable overlay.
@@ -309,26 +303,21 @@ Here,
 
 \begin{itemize}
     \item $G_{\mathrm{A}}(t)$ is the currently stored artificial overlay;
-    \item $\mathcal{L}(t)$ is the collection of temporal e-link states;
+    \item $\mathcal{L}(t)$ is the collection of temporal states of artificial e-links;
     \item $G_{\mathrm{U}}(t)$ is the temporally usable overlay;
     \item $\mathcal{R}_{s,d}^{\mathrm{cand}}(t)$ is the candidate-route set;
     \item $\mathcal{R}_{s,d}^{\mathrm{TF}}(t)$ is the temporally feasible route set; and
-    \item $R_{s,d}^{*}(t)$ is the selected route.
+    \item $R_{s,d}^{*}(t)$ is the selected minimum-cost route.
 \end{itemize}
 
 The framework contains two interacting control processes:
 
-\begin{equation}
-    \mathrm{Reactive\ Routing}
-\end{equation}
+\begin{itemize}
+    \item Reactive routing;
+    \item Proactive overlay maintenance.
+\end{itemize}
 
-and
-
-\begin{equation}
-    \mathrm{Proactive\ Overlay\ Maintenance}.
-\end{equation}
-
-Reactive routing is executed when an entanglement request arrives. It constructs candidate compact routes, predicts their temporal condition, removes infeasible routes, and selects the lowest-cost feasible route.
+Reactive routing is executed when an entanglement request arrives. It constructs candidate compact routes, evaluates their temporal conditions, removes infeasible routes, and selects the lowest-cost temporally feasible route.
 
 Proactive overlay maintenance is executed periodically or when a critical state change occurs. It identifies artificial e-links that should be regenerated, replaced, or discarded before they cause routing failure.
 
@@ -353,7 +342,7 @@ where
     \item $G_{\mathrm{P}}$ is the physical quantum network;
     \item $G_{\mathrm{A}}(t)$ is the current artificial overlay;
     \item $\mathcal{D}(t)$ is the set of active entanglement requests;
-    \item $\mathcal{T}(t)$ is the compact routing-table state;
+    \item $\mathcal{T}(t)$ is the compact-routing-table state;
     \item $\mathcal{M}(t)$ is the quantum-memory state; and
     \item $\mathcal{Q}(t)$ is the observed or predicted network-quality state.
 \end{itemize}
@@ -377,7 +366,7 @@ where
     \item $\mathcal{Y}(t)$ is the set of selected routes;
     \item $\mathcal{R}^{\mathrm{regen}}(t)$ is the regeneration-action set;
     \item $\mathcal{E}^{\mathrm{drop}}(t)$ is the set of discarded e-links; and
-    \item $\mathcal{T}(t+1)$ is the updated compact routing-table state.
+    \item $\mathcal{T}(t+1)$ is the updated compact-routing-table state.
 \end{itemize}
 
 The proposed framework is divided into six functional modules.
@@ -400,21 +389,25 @@ Its output is the temporally usable artificial overlay
 \subsection{Compact Candidate-Construction Module}
 
 This module constructs a limited number of candidate routes using only the routing information permitted by the Partial-Anchor or Full-Anchor compact-routing scheme.
+\subsection{Compact Candidate-Construction Module}
 
-The candidate-route set is
+The candidate-route set generated by this module is represented as
 
 \begin{equation}
     \mathcal{R}_{s,d}^{\mathrm{cand}}(t).
 \end{equation}
 
-This restriction preserves compact routing-state requirements and avoids unrestricted global path enumeration.
+This restriction preserves compact-routing state requirements and avoids unrestricted global path enumeration.
 
 \subsection{Temporal-Feasibility Module}
 
-This module evaluates each candidate route according to
+This module evaluates each candidate route according to the temporal route-feasibility indicator
 
 \begin{equation}
-    \chi_{s,d}(R,t).
+    \chi_{s,d}
+    \left(
+    R_{s,d}(t)
+    \right).
 \end{equation}
 
 Routes that violate fidelity, coherence-budget, memory, delay, or e-link availability constraints are removed.
@@ -429,7 +422,7 @@ The remaining route set is
 
 \subsection{Time-Dependent Route-Selection Module}
 
-For each feasible route, the module calculates
+For each temporally feasible route, this module calculates the accumulated time-dependent entangling cost:
 
 \begin{equation}
     w_t(R)
@@ -453,7 +446,7 @@ The selected route is
 
 \subsection{Route-Repair Module}
 
-When no directly feasible route exists, this module identifies routes that can become feasible through limited regeneration or purification.
+When no directly feasible route exists, this module identifies routes that can become feasible through limited regeneration or purification operations.
 
 The route-repair process is performed only when
 
@@ -495,7 +488,7 @@ The maintenance priority is defined as
     H_{ij}^{\mathrm{use}}(t),
 \end{equation}
 
-where $H_{ij}^{\mathrm{use}}(t)$ is the recent or predicted utilization level of the e-link.
+where $H_{ij}^{\mathrm{use}}(t)$ represents the recent or predicted utilization level of the artificial e-link.
 
 The weights satisfy
 
@@ -506,15 +499,16 @@ The weights satisfy
     1.
 \end{equation}
 
-The highest-priority links are regenerated subject to memory, generation-attempt, and control-overhead limits.
+The highest-priority links are regenerated subject to quantum-memory availability, generation-attempt budget, and control-overhead limitations.
 
-The framework is intentionally modular. Different fidelity models, delay predictors, compact-routing structures, or regeneration policies can be inserted without changing the overall processing sequence.
+The framework is intentionally modular. Different fidelity models, delay predictors, compact-routing structures, or regeneration policies can be integrated without changing the overall processing sequence.
 
-The proposed method is a model-based routing and control heuristic. It does not require a trained machine-learning model. Any prediction component used in the initial implementation is derived from measured averages, analytical estimates, or simulation parameters.
+The proposed method is a model-based routing and control heuristic. It does not require a trained machine-learning model. Any prediction component used in the implementation is derived from measured averages, analytical estimates, or simulation parameters.
 \section{Temporal E-Link State Monitoring}
+
 The temporal e-link state-monitoring module continuously evaluates the condition of every artificial e-link stored in the quantum memories of the Entanglement Service Providers.
 
-Its purpose is to distinguish between an e-link that is merely present in the overlay and an e-link that is sufficiently reliable for future routing and swapping operations.
+Its purpose is to distinguish between an artificial e-link that is merely present in the overlay and an e-link that remains sufficiently reliable for future routing and entanglement-swapping operations.
 
 Let the set of currently stored artificial e-links be
 
@@ -522,7 +516,7 @@ Let the set of currently stored artificial e-links be
     E_{\mathrm{A}}(t).
 \end{equation}
 
-For each artificial e-link $(i,j)\in E_{\mathrm{A}}(t)$, the controller maintains the state record
+For each artificial e-link $(i,j)\in E_{\mathrm{A}}(t)$, the controller maintains the temporal state record
 
 \begin{equation}
     \mathcal{L}_{ij}(t)
@@ -530,7 +524,9 @@ For each artificial e-link $(i,j)\in E_{\mathrm{A}}(t)$, the controller maintain
     \left[
     x_{ij}(t),
     A_{ij}(t),
+    F_{ij}^{\mathrm{A},0},
     F_{ij}^{\mathrm{eff}}(t),
+    T_{2,ij},
     \widehat{F}_{ij}^{\mathrm{cons}}(t),
     B_{ij}(t),
     H_{ij}^{\mathrm{use}}(t),
@@ -543,14 +539,16 @@ where
 \begin{itemize}
     \item $x_{ij}(t)$ is the current storage and availability indicator;
     \item $A_{ij}(t)$ is the current e-link age;
+    \item $F_{ij}^{\mathrm{A},0}$ is the initial fidelity after e-link generation;
     \item $F_{ij}^{\mathrm{eff}}(t)$ is the current effective fidelity;
+    \item $T_{2,ij}$ is the coherence time of the stored entanglement;
     \item $\widehat{F}_{ij}^{\mathrm{cons}}(t)$ is the predicted fidelity at consumption time;
     \item $B_{ij}(t)$ is the remaining coherence budget;
     \item $H_{ij}^{\mathrm{use}}(t)$ is the recent or predicted utilization score; and
     \item $S_{ij}^{\mathrm{state}}(t)$ is the temporal-state classification.
 \end{itemize}
 
-At the beginning of every time slot, the age of each active e-link is updated as
+At the end of each time slot, the age of an active e-link is updated as
 
 \begin{equation}
     A_{ij}(t+1)
@@ -570,7 +568,7 @@ When regeneration succeeds, the age is reset:
     0.
 \end{equation}
 
-The current effective fidelity is then estimated using the selected decoherence model:
+The current effective fidelity is estimated using the selected decoherence model:
 
 \begin{equation}
     F_{ij}^{\mathrm{eff}}(t)
@@ -616,7 +614,9 @@ The remaining coherence budget is updated according to
     \widehat{D}_{ij}^{\mathrm{use}}(t).
 \end{equation}
 
-To reduce sensitivity to short-term fluctuations, the utilization score may be updated using an exponential moving average:
+\subsection{Temporal-State Classification and Link Availability}
+
+To reduce sensitivity to short-term fluctuations, the utilization score is updated using an exponential moving average:
 
 \begin{equation}
     H_{ij}^{\mathrm{use}}(t)
@@ -651,7 +651,7 @@ and
     \end{cases}
 \end{equation}
 
-The e-link state is classified using fidelity and coherence-budget thresholds.
+The temporal state of an artificial e-link is classified according to predicted consumption fidelity and remaining coherence budget.
 
 A link is classified as safe when
 
@@ -669,7 +669,7 @@ and
     F_{\mathrm{high}}.
 \end{equation}
 
-A link is classified as warning when
+A link is classified as warning when it remains usable but approaches temporal degradation:
 
 \begin{equation}
     B_{\mathrm{low}}
@@ -689,7 +689,7 @@ or
     F_{\mathrm{high}}.
 \end{equation}
 
-A link is classified as critical when
+A link is classified as critical when it is still potentially recoverable but has a high risk of becoming unusable:
 
 \begin{equation}
     0
@@ -703,11 +703,11 @@ or
 
 \begin{equation}
     \widehat{F}_{ij}^{\mathrm{cons}}(t)
-    <
-    F_{\min}^{\mathrm{link}},
+    \approx
+    F_{\min}^{\mathrm{link}}.
 \end{equation}
 
-while the link remains potentially recoverable through regeneration or purification.
+Critical links are not directly preferred for route selection and may trigger proactive regeneration or purification.
 
 A link is classified as expired when
 
@@ -717,7 +717,7 @@ A link is classified as expired when
     0
 \end{equation}
 
-or when its active storage indicator satisfies
+or
 
 \begin{equation}
     x_{ij}(t)
@@ -725,16 +725,20 @@ or when its active storage indicator satisfies
     0.
 \end{equation}
 
-The resulting classification is
+The resulting temporal-state classification is
 
 \begin{equation}
     S_{ij}^{\mathrm{state}}(t)
     =
     \begin{cases}
-        \mathrm{Safe}, & \text{if all safe conditions hold},\\
-        \mathrm{Warning}, & \text{if warning conditions hold},\\
-        \mathrm{Critical}, & \text{if recovery may still be possible},\\
-        \mathrm{Expired}, & \text{if the link is unusable}.
+        \mathrm{Safe},
+        & \text{if high-quality conditions are satisfied},\\
+        \mathrm{Warning},
+        & \text{if the link remains usable with degradation risk},\\
+        \mathrm{Critical},
+        & \text{if recovery actions may restore usability},\\
+        \mathrm{Expired},
+        & \text{if the link is unusable}.
     \end{cases}
 \end{equation}
 
@@ -745,11 +749,13 @@ The direct-use indicator is defined as
     =
     \begin{cases}
         1,
-        & S_{ij}^{\mathrm{state}}(t)
+        &
+        S_{ij}^{\mathrm{state}}(t)
         \in
         \{\mathrm{Safe},\mathrm{Warning}\},\\
         0,
-        & \text{otherwise}.
+        &
+        \text{otherwise}.
     \end{cases}
 \end{equation}
 
@@ -760,15 +766,17 @@ The regeneration-candidate indicator is defined as
     =
     \begin{cases}
         1,
-        & S_{ij}^{\mathrm{state}}(t)
+        &
+        S_{ij}^{\mathrm{state}}(t)
         =
         \mathrm{Critical},\\
         0,
-        & \text{otherwise}.
+        &
+        \text{otherwise}.
     \end{cases}
 \end{equation}
 
-Expired links are removed from direct route construction and may be discarded from memory:
+Expired links are removed from route construction and may be discarded from memory:
 
 \begin{equation}
     u_{ij}^{\mathrm{drop}}(t)
@@ -791,13 +799,11 @@ The temporally usable edge set is therefore
     \in
     E_{\mathrm{A}}(t)
     :
-    u_{ij}^{\mathrm{direct}}(t)
-    =
-    1
+    u_{ij}^{\mathrm{direct}}(t)=1
     \right\}.
 \end{equation}
 
-The temporal-state monitor may operate periodically rather than continuously. Let
+The temporal-state monitor operates periodically. Let
 
 \begin{equation}
     \tau_{\mathrm{mon}}
@@ -807,10 +813,11 @@ denote the monitoring interval.
 
 A shorter monitoring interval improves responsiveness but increases control and state-update overhead. A longer interval reduces overhead but may allow rapidly degrading links to remain incorrectly classified.
 
-The monitoring interval will therefore be evaluated experimentally under different coherence times, request rates, and overlay sizes.
+Therefore, the monitoring interval is evaluated experimentally under different coherence times, request rates, and overlay sizes.
 
-The output of this module is a synchronized temporal-state table used by candidate-route construction, feasibility filtering, route selection, and proactive regeneration.
+The output of this module is a synchronized temporal-state table used by candidate-route construction, temporal-feasibility filtering, route selection, and proactive regeneration.
 \section{Candidate Route Construction}
+
 The candidate-route construction module generates a limited set of compact-routing paths between a source ESP and a destination ESP. Its purpose is to avoid unrestricted enumeration of all possible paths while preserving the structural properties of the underlying Partial-Anchor or Full-Anchor routing scheme.
 
 For an entanglement request between source ESP $v_s$ and destination ESP $v_d$, the candidate-route set at time $t$ is denoted by
@@ -819,7 +826,7 @@ For an entanglement request between source ESP $v_s$ and destination ESP $v_d$, 
     \mathcal{R}_{s,d}^{\mathrm{cand}}(t).
 \end{equation}
 
-Candidate routes are constructed over the currently available compact-overlay information. The module uses
+Candidate routes are constructed over the currently available compact-overlay information. The module uses the temporally usable overlay
 
 \begin{equation}
     G_{\mathrm{U}}(t)
@@ -835,7 +842,7 @@ where $E_{\mathrm{U}}(t)$ contains artificial e-links classified as safe or warn
 The candidate-generation process first checks whether the source and destination are directly connected by a usable artificial e-link. If
 
 \begin{equation}
-    (s,d)
+    (v_s,v_d)
     \in
     E_{\mathrm{U}}(t),
 \end{equation}
@@ -871,7 +878,7 @@ denote the usable e-neighborhood of ESP $v_i$:
     \in
     V_2
     :
-    (i,j)
+    (v_i,v_j)
     \in
     E_{\mathrm{U}}(t)
     \right\}.
@@ -899,7 +906,7 @@ where
     \mathcal{N}_{\mathrm{U}}(v_d,t).
 \end{equation}
 
-For longer compact routes, the controller follows the routing structure of the selected overlay scheme.
+For longer compact routes, the controller follows the routing structure of the selected overlay scheme. In the Partial-Anchor scheme, route construction is restricted by local e-neighborhood information and selected anchor links. In the Full-Anchor scheme, additional tracked long-range links are considered during candidate generation.
 
 \subsection{Candidate Construction in the Partial-Anchor Scheme}
 
@@ -921,11 +928,11 @@ The usable source-anchor set is
     \mathcal{T}_{s}^{\mathrm{U}}(t)
     =
     \left\{
-    a
+    v_a
     \in
     \mathcal{T}
     :
-    a
+    v_a
     \in
     \mathcal{N}_{\mathrm{U}}(v_s,t)
     \right\}.
@@ -937,11 +944,11 @@ Similarly, the usable destination-anchor set is
     \mathcal{T}_{d}^{\mathrm{U}}(t)
     =
     \left\{
-    b
+    v_b
     \in
     \mathcal{T}
     :
-    b
+    v_b
     \in
     \mathcal{N}_{\mathrm{U}}(v_d,t)
     \right\}.
@@ -954,9 +961,9 @@ A Partial-Anchor candidate route can be written as
     =
     \left(
     v_s,
-    a,
+    v_a,
     \ldots,
-    b,
+    v_b,
     v_d
     \right),
 \end{equation}
@@ -964,7 +971,7 @@ A Partial-Anchor candidate route can be written as
 where
 
 \begin{equation}
-    a
+    v_a
     \in
     \mathcal{T}_{s}^{\mathrm{U}}(t)
 \end{equation}
@@ -972,7 +979,7 @@ where
 and
 
 \begin{equation}
-    b
+    v_b
     \in
     \mathcal{T}_{d}^{\mathrm{U}}(t).
 \end{equation}
@@ -987,7 +994,7 @@ Let
 
 denote the usable subgraph formed by anchor ESPs and usable anchor e-links.
 
-A bounded number of low-cost anchor paths is generated between $a$ and $b$.
+A bounded number of low-cost anchor paths is generated between $v_a$ and $v_b$.
 
 \subsection{Candidate Construction in the Full-Anchor Scheme}
 
@@ -996,12 +1003,12 @@ In the Full-Anchor Scheme, every ESP may maintain local e-links and selected tra
 Let
 
 \begin{equation}
-    \mathcal{L}_{i}^{\mathrm{track}}(t)
+    E_{\mathrm{tracked}}^{\mathrm{U}}(t)
 \end{equation}
 
-denote the set of currently usable tracked links maintained by ESP $v_i$.
+denote the set of currently usable tracked long-range artificial e-links.
 
-The Full-Anchor candidate set is formed from
+The Full-Anchor candidate set is constructed using
 
 \begin{equation}
     E_{\mathrm{local}}^{\mathrm{U}}(t)
@@ -1009,7 +1016,7 @@ The Full-Anchor candidate set is formed from
     E_{\mathrm{tracked}}^{\mathrm{U}}(t).
 \end{equation}
 
-A candidate route is constructed by combining a local source segment, zero or more tracked-link segments, and a local destination segment.
+A candidate route is constructed by combining local source segments, tracked long-range segments, and local destination segments.
 
 A general candidate route is represented by
 
@@ -1025,8 +1032,7 @@ A general candidate route is represented by
     \right),
 \end{equation}
 
-where every consecutive pair corresponds to a usable local or tracked artificial e-link.
-
+where every consecutive node pair corresponds to a usable local or tracked artificial e-link.
 \subsection{Bounded Candidate-Set Size}
 
 To control computational overhead, the controller retains at most
@@ -1056,7 +1062,7 @@ Candidate routes are initially ranked using a lightweight preliminary score
     \widetilde{w}_t(i,j),
 \end{equation}
 
-where $\widetilde{w}_t(i,j)$ may include only readily available local information such as hop count, current fidelity, normalized age, and direct-use state.
+where $\widetilde{w}_t(i,j)$ includes only readily available local information such as hop count, current fidelity, normalized age, and direct-use state.
 
 A possible preliminary link score is
 
@@ -1078,7 +1084,7 @@ A possible preliminary link score is
     }.
 \end{equation}
 
-The coefficients are nonnegative and satisfy
+The coefficients satisfy
 
 \begin{equation}
     \eta_h+\eta_F+\eta_A=1.
@@ -1086,22 +1092,20 @@ The coefficients are nonnegative and satisfy
 
 This preliminary score is used only for candidate pruning. Final route selection uses the complete time-dependent entangling-cost metric.
 
-To avoid routing loops, every candidate route must satisfy
+To avoid routing loops, every candidate route must contain unique nodes:
 
 \begin{equation}
-    v_i
+    v_m
     \neq
-    v_j
+    v_n,
+    \qquad
+    \forall m\neq n .
 \end{equation}
-
-for all distinct positions $i$ and $j$ in the route.
 
 A maximum overlay-hop constraint is also applied:
 
 \begin{equation}
-    |R|
-    -
-    1
+    |R|-1
     \leq
     H_{\max},
 \end{equation}
@@ -1113,7 +1117,7 @@ The final candidate set is
 \begin{equation}
     \mathcal{R}_{s,d}^{\mathrm{cand}}(t)
     =
-    \operatorname{TopK}_{R}
+    \operatorname{TopK}_{K_{\max}}
     \left[
     \widetilde{w}_t(R)
     \right],
@@ -1122,46 +1126,6 @@ The final candidate set is
 subject to compact-routing, loop-free, direct-use, and maximum-hop constraints.
 
 The output of this module is a small set of structurally valid candidate routes. These routes are passed to the temporal-feasibility module, where predicted consumption fidelity, remaining coherence budget, delay, memory availability, and end-to-end fidelity are evaluated in detail.
-\section{Temporal Feasibility Filtering}
-The temporal-feasibility filtering module removes candidate routes that are structurally valid but are unlikely to complete successfully under the current temporal state of the artificial overlay.
-
-For a source--destination request $(s,d)$, the input to this module is the candidate-route set
-
-\begin{equation}
-    \mathcal{R}_{s,d}^{\mathrm{cand}}(t).
-\end{equation}
-
-Each candidate route is evaluated according to e-link availability, predicted fidelity, remaining coherence budget, route-completion delay, memory availability, and swapping feasibility.
-
-The output is the temporally feasible route set
-
-\begin{equation}
-    \mathcal{R}_{s,d}^{\mathrm{TF}}(t)
-    \subseteq
-    \mathcal{R}_{s,d}^{\mathrm{cand}}(t).
-\end{equation}
-
-Consider a candidate route
-
-\begin{equation}
-    R
-    =
-    \left(
-    v_s,
-    v_{r_1},
-    \ldots,
-    v_{r_h},
-    v_d
-    \right).
-\end{equation}
-
-Let
-
-\begin{equation}
-    E(R)
-\end{equation}
-
-denote the set of artificial e-links included in the route.
 
 \subsection{Availability Test}
 
@@ -1202,7 +1166,7 @@ the route is removed from the directly feasible set.
 
 \subsection{Predicted Consumption-Time Calculation}
 
-The e-links of a candidate route may not be consumed at the same instant. Therefore, the controller estimates the consumption time of each e-link according to the expected swapping schedule.
+Therefore, the temporal feasibility evaluation is performed individually for each e-link based on its predicted consumption time. Therefore, the controller estimates the consumption time of each e-link according to the expected swapping schedule.
 
 Let
 
@@ -1290,50 +1254,6 @@ The corresponding indicator is
     \right].
 \end{equation}
 
-\subsection{Coherence-Budget Test}
-
-For each e-link, the route-specific remaining coherence budget is
-
-\begin{equation}
-    B_{ij}(R,t)
-    =
-    T_{2,ij}
-    -
-    A_{ij}(t)\Delta
-    -
-    \widehat{\tau}_{ij}^{\mathrm{cons}}(R,t).
-\end{equation}
-
-The route passes the coherence-budget test only if
-
-\begin{equation}
-    B_{ij}(R,t)
-    \geq
-    \delta_{\mathrm{safe}},
-    \qquad
-    \forall (i,j)
-    \in
-    E(R).
-\end{equation}
-
-The route-level coherence indicator is
-
-\begin{equation}
-    \chi_{\mathrm{coh}}(R,t)
-    =
-    \prod_{
-    (i,j)
-    \in
-    E(R)
-    }
-    \mathbf{1}
-    \left[
-    B_{ij}(R,t)
-    \geq
-    \delta_{\mathrm{safe}}
-    \right].
-\end{equation}
-
 \subsection{End-to-End Fidelity Test}
 
 Using the predicted consumption-time fidelities, the controller estimates the end-to-end route fidelity.
@@ -1365,11 +1285,13 @@ The predicted end-to-end Werner parameter is
     \prod_{
     v_r
     \in
-    R\setminus\{v_s,v_d\}
+    \mathrm{Int}(R)
     }
     \lambda_r
-    \right).
+    \right),
 \end{equation}
+
+where $\mathrm{Int}(R)$ denotes the set of intermediate ESPs participating in entanglement swapping along route $R$.
 
 The predicted end-to-end fidelity is
 
@@ -1404,6 +1326,7 @@ The associated indicator is
     \right].
 \end{equation}
 
+
 \subsection{Route-Delay Test}
 
 The predicted route-completion delay is denoted by
@@ -1425,6 +1348,8 @@ A general decomposition is
     +
     \widehat{D}_{\mathrm{swap}}(R,t).
 \end{equation}
+
+The delay estimation is route-dependent because different candidate routes may contain different numbers of swapping operations, purification requirements, and queueing conditions.
 
 The route satisfies the delay constraint only if
 
@@ -1449,7 +1374,7 @@ The route-delay indicator is
 
 \subsection{Memory and E-Bit Availability Test}
 
-The number of stored e-bits on each artificial e-link must be sufficient for the route request.
+The number of stored e-bits on each artificial e-link must be sufficient to satisfy the entanglement request.
 
 For a single-pair request, the link-level resource condition is
 
@@ -1463,7 +1388,7 @@ For a single-pair request, the link-level resource condition is
     E(R).
 \end{equation}
 
-For a request requiring $b_{s,d}$ entangled pairs, the condition becomes
+For a request requiring $b_{s,d}$ entangled pairs, where $b_{s,d}$ denotes the required number of entangled pairs between source and destination, the condition becomes
 
 \begin{equation}
     n_{ij}^{\mathrm{ebit}}(t)
@@ -1492,6 +1417,7 @@ The route-level resource indicator is
     b_{s,d}
     \right].
 \end{equation}
+
 
 \subsection{Overall Temporal-Feasibility Decision}
 
@@ -1532,7 +1458,9 @@ The temporally feasible route set is therefore
     \right\}.
 \end{equation}
 
-Candidate routes rejected by the direct-feasibility test are not immediately discarded from all further consideration. A route containing a limited number of critical but regenerable links is transferred to the route-repair set
+Candidate routes that fail the direct-feasibility test are not immediately discarded if their infeasibility can be corrected through limited regeneration or repair operations.
+
+Such routes are transferred to the route-repair set
 
 \begin{equation}
     \mathcal{R}_{s,d}^{\mathrm{repair}}(t).
@@ -1554,8 +1482,9 @@ and
     C_{\max}^{\mathrm{repair}}.
 \end{equation}
 
-This two-stage filtering process distinguishes routes that are immediately feasible, repairable, and infeasible. It prevents the route-selection module from assigning low cost to a path that is topologically available but temporally incapable of satisfying the entanglement request.
+This two-stage filtering process distinguishes among immediately feasible, repairable, and infeasible routes. It prevents the route-selection module from assigning low cost to a path that is topologically available but temporally incapable of satisfying the entanglement request.
 \section{Time-Dependent Route Selection}
+
 The time-dependent route-selection module chooses the best route from the set of temporally feasible candidates.
 
 For an entanglement request between source ESP $v_s$ and destination ESP $v_d$, the feasible candidate set is
@@ -1577,7 +1506,7 @@ the controller evaluates the complete time-dependent route cost.
 The route cost is defined as
 
 \begin{equation}
-    W_t(R)
+    w_t(R)
     =
     \sum_{
     (i,j)
@@ -1599,16 +1528,16 @@ where
     \item $C_{\mathrm{route}}^{\mathrm{delay}}(R,t)$ is the normalized completion-delay cost.
 \end{itemize}
 
-The link-level cost is
+The link-level time-dependent cost is
 
 \begin{equation}
     w_t(i,j)
     =
-    \alpha_F C_F(i,j,t)
+    \alpha_F C_F(i,j,R,t)
     +
     \alpha_A C_A(i,j,t)
     +
-    \alpha_B C_B(i,j,t)
+    \alpha_B C_B(i,j,R,t)
     +
     \alpha_R C_R(i,j,t)
     +
@@ -1634,7 +1563,7 @@ The coefficients satisfy
 The fidelity cost is defined as
 
 \begin{equation}
-    C_F(i,j,t)
+    C_F(i,j,R,t)
     =
     1
     -
@@ -1662,7 +1591,7 @@ The age cost is
 The normalized coherence-budget cost is defined as
 
 \begin{equation}
-    C_B(i,j,t)
+    C_B(i,j,R,t)
     =
     \frac{
     1
@@ -1685,7 +1614,7 @@ where
     }.
 \end{equation}
 
-Since only temporally feasible routes reach this module,
+Since only temporally feasible routes reach this module, links with non-positive coherence budget are already removed before route selection:
 
 \begin{equation}
     \widetilde{B}_{ij}(R,t)
@@ -1727,6 +1656,8 @@ The structural routing cost is represented by
 
 This component distinguishes local e-neighbor links, anchor links, and tracked long-range links according to their resource and maintenance requirements.
 
+\subsection{Route-Level Cost Components}
+
 The swapping cost of route $R$ is defined as
 
 \begin{equation}
@@ -1736,7 +1667,7 @@ The swapping cost of route $R$ is defined as
     \sum_{
     v_r
     \in
-    R\setminus\{v_s,v_d\}
+    \mathrm{Int}(R)
     }
     \left(
     1-q_r
@@ -1768,7 +1699,7 @@ The selected directly feasible route is
     \in
     \mathcal{R}_{s,d}^{\mathrm{TF}}(t)
     }
-    W_t(R).
+    w_t(R).
 \end{equation}
 
 When multiple routes have the same minimum cost, the controller applies the following tie-breaking order:
@@ -1798,7 +1729,7 @@ The route-selection decision can therefore be represented lexicographically as
 \begin{equation}
     \min
     \left[
-    W_t(R),
+    w_t(R),
     -
     \widehat{F}_{s,d}^{\mathrm{end}}(R,t),
     -
@@ -1878,20 +1809,20 @@ The realized route success probability is estimated as
     \prod_{
     v_r
     \in
-    R\setminus\{v_s,v_d\}
+    \mathrm{Int}(R)
     }
     q_r
     \right),
 \end{equation}
 
-where $p_{ij}^{\mathrm{avail}}(t)$ represents the probability that e-link $(i,j)$ remains usable until its scheduled consumption.
+where $p_{ij}^{\mathrm{avail}}(t)$ represents the probability that artificial e-link $(i,j)$ remains usable until its scheduled consumption time.
 
 A reliability-aware extension of the route cost is
 
 \begin{equation}
-    W_t^{\mathrm{rel}}(R)
+    w_t^{\mathrm{rel}}(R)
     =
-    W_t(R)
+    w_t(R)
     +
     \alpha_P
     \left[
@@ -1900,7 +1831,7 @@ A reliability-aware extension of the route cost is
     \right].
 \end{equation}
 
-This logarithmic form converts multiplicative success probabilities into an additive routing penalty.
+This logarithmic transformation converts the multiplicative success probability into an additive routing penalty.
 
 The route selected under the reliability-aware metric is
 
@@ -1912,10 +1843,10 @@ The route selected under the reliability-aware metric is
     \in
     \mathcal{R}_{s,d}^{\mathrm{TF}}(t)
     }
-    W_t^{\mathrm{rel}}(R).
+    w_t^{\mathrm{rel}}(R).
 \end{equation}
 
-The initial implementation will compare the basic time-dependent metric and the reliability-aware extension experimentally.
+The reliability-aware metric provides an optional extension of the basic temporal entangling-cost metric. Its effectiveness will be evaluated through comparative experiments.
 
 When
 
@@ -1927,122 +1858,13 @@ When
 
 the module does not select a directly feasible route.
 
-Instead, it passes the request and the repairable candidate set
+Instead, it forwards the request and the repairable candidate set
 
 \begin{equation}
     \mathcal{R}_{s,d}^{\mathrm{repair}}(t)
 \end{equation}
 
 to the proactive regeneration and route-repair process described in the following section.
-\section{Proactive E-Link Regeneration}
-The proactive e-link regeneration module identifies artificial e-links that should be refreshed before they become unusable and cause route failure.
-
-Unlike purely reactive regeneration, which begins only after a routing request fails, proactive regeneration uses the current temporal state, predicted utilization, structural importance, and regeneration cost to determine which e-links should be refreshed in advance.
-
-Let
-
-\begin{equation}
-    \mathcal{E}_{\mathrm{crit}}(t)
-\end{equation}
-
-denote the set of artificial e-links currently classified as critical:
-
-\begin{equation}
-    \mathcal{E}_{\mathrm{crit}}(t)
-    =
-    \left\{
-    (i,j)
-    \in
-    E_{\mathrm{A}}(t)
-    :
-    S_{ij}^{\mathrm{state}}(t)
-    =
-    \mathrm{Critical}
-    \right\}.
-\end{equation}
-
-A critical link is not necessarily regenerated immediately. The controller first evaluates its regeneration priority.
-
-The regeneration-priority score is defined as
-
-\begin{equation}
-    \Pi_{ij}^{\mathrm{regen}}(t)
-    =
-    \beta_B
-    \widehat{C}_{B}(i,j,t)
-    +
-    \beta_F
-    \widehat{C}_{F}(i,j,t)
-    +
-    \beta_I
-    I_{ij}^{\mathrm{struct}}
-    +
-    \beta_H
-    H_{ij}^{\mathrm{use}}(t)
-    +
-    \beta_Q
-    Q_{ij}^{\mathrm{demand}}(t)
-    -
-    \beta_R
-    \widehat{C}_{R}(i,j,t),
-\end{equation}
-
-where
-
-\begin{itemize}
-    \item $\widehat{C}_{B}(i,j,t)$ is the normalized coherence-budget risk;
-    \item $\widehat{C}_{F}(i,j,t)$ is the normalized fidelity risk;
-    \item $I_{ij}^{\mathrm{struct}}$ is the structural importance of the e-link;
-    \item $H_{ij}^{\mathrm{use}}(t)$ is the recent utilization score;
-    \item $Q_{ij}^{\mathrm{demand}}(t)$ is the predicted demand relevance; and
-    \item $\widehat{C}_{R}(i,j,t)$ is the normalized regeneration cost.
-\end{itemize}
-
-The weights are nonnegative. For normalized implementation, they may satisfy
-
-\begin{equation}
-    \beta_B
-    +
-    \beta_F
-    +
-    \beta_I
-    +
-    \beta_H
-    +
-    \beta_Q
-    +
-    \beta_R
-    =
-    1.
-\end{equation}
-
-The normalized coherence-budget risk is
-
-\begin{equation}
-    \widehat{C}_{B}(i,j,t)
-    =
-    \min
-    \left\{
-    \frac{
-    B_{\mathrm{high}}-B_{ij}(t)
-    }{
-    B_{\mathrm{high}}
-    },
-    1
-    \right\},
-\end{equation}
-
-for
-
-\begin{equation}
-    0
-    <
-    B_{ij}(t)
-    <
-    B_{\mathrm{high}}.
-\end{equation}
-
-A smaller remaining coherence budget therefore produces a larger risk score.
 
 The normalized fidelity risk is defined as
 
@@ -2115,7 +1937,7 @@ A link becomes a proactive-regeneration candidate when
     \Pi_{\min}
 \end{equation}
 
-and sufficient resources are available.
+and sufficient regeneration resources are available.
 
 The candidate set is
 
@@ -2152,32 +1974,29 @@ It is defined as
     \end{cases}
 \end{equation}
 
-The controller selects a bounded number of highest-priority candidates:
+The controller selects at most $R_{\max}$ highest-priority regeneration candidates:
 
 \begin{equation}
     \mathcal{E}_{\mathrm{regen}}^{*}(t)
     =
-    \operatorname{TopK}_{
-    (i,j)
-    \in
-    \mathcal{E}_{\mathrm{regen}}^{\mathrm{cand}}(t)
-    }
-    \left[
-    \Pi_{ij}^{\mathrm{regen}}(t)
-    \right],
+    \operatorname{TopK}
+    \left(
+    \mathcal{E}_{\mathrm{regen}}^{\mathrm{cand}}(t),
+    R_{\max}
+    \right).
 \end{equation}
 
-subject to
+The selected regeneration actions must satisfy the regeneration budget constraint:
 
 \begin{equation}
-    \left|
+    |
     \mathcal{E}_{\mathrm{regen}}^{*}(t)
-    \right|
+    |
     \leq
     R_{\max}.
 \end{equation}
 
-The selected regeneration actions must satisfy quantum-memory availability:
+Let $m_i(t)$ denote the currently occupied quantum-memory capacity at ESP $v_i$. The regeneration decision must satisfy
 
 \begin{equation}
     m_i(t)
@@ -2197,7 +2016,7 @@ The selected regeneration actions must satisfy quantum-memory availability:
     V_2.
 \end{equation}
 
-They must also satisfy the physical-generation capacity constraint:
+TThey must also satisfy the physical-generation capacity constraint:
 
 \begin{equation}
     \sum_{
@@ -2211,9 +2030,9 @@ They must also satisfy the physical-generation capacity constraint:
     G_{\max},
 \end{equation}
 
-where $g_{ij}^{\mathrm{req}}$ is the expected number of elementary-generation attempts required for regenerating e-link $(i,j)$ and $G_{\max}$ is the available generation-attempt budget.
+where $g_{ij}^{\mathrm{req}}$ represents the expected number of elementary-link generation attempts required for regenerating artificial e-link $(i,j)$, and $G_{\max}$ denotes the available generation-attempt budget.
 
-For an artificial e-link constructed through physical route $P_{ij}^{\mathrm{gen}}$, the expected regeneration delay is
+For an artificial e-link generated through physical path $P_{ij}^{\mathrm{gen}}$, the expected regeneration delay is
 
 \begin{equation}
     D_{ij}^{\mathrm{regen}}
@@ -2228,7 +2047,7 @@ For an artificial e-link constructed through physical route $P_{ij}^{\mathrm{gen
     D_{ij}^{\mathrm{coord}}.
 \end{equation}
 
-When purification is required, the delay becomes
+When purification is required, the regeneration delay becomes
 
 \begin{equation}
     D_{ij}^{\mathrm{regen,pur}}
@@ -2240,7 +2059,7 @@ When purification is required, the delay becomes
 
 The regeneration process may follow either a replace-after-success strategy or a discard-before-generation strategy.
 
-Under the replace-after-success strategy, the old e-link remains available until the new one is successfully generated. After successful regeneration,
+Under the replace-after-success strategy, the old artificial e-link remains available until the new e-link is successfully generated. After successful regeneration,
 
 \begin{equation}
     F_{ij}^{\mathrm{eff}}(t+1)
@@ -2264,11 +2083,11 @@ and
     \widehat{D}_{ij}^{\mathrm{use}}(t+1).
 \end{equation}
 
-This strategy reduces temporary disconnection risk but may require additional memory to store both the old and new e-links during the transition.
+This strategy reduces temporary disconnection risk but requires additional memory capacity because both old and newly generated e-links may coexist during the transition period.
 
-Under the discard-before-generation strategy, the old e-link is released before regeneration. This reduces memory usage but temporarily removes the link from the usable overlay.
+Under the discard-before-generation strategy, the old e-link is released before regeneration. This reduces memory consumption but temporarily removes the link from the usable overlay.
 
-The replacement policy is represented by
+The replacement-policy variable is defined as
 
 \begin{equation}
     \rho_{ij}^{\mathrm{replace}}
@@ -2284,9 +2103,9 @@ where
     1
 \end{equation}
 
-indicates replace-after-success operation.
+indicates that the replace-after-success strategy is selected.
 
-The policy may be selected according to available memory:
+The policy is determined according to available memory capacity:
 
 \begin{equation}
     \rho_{ij}^{\mathrm{replace}}
@@ -2303,7 +2122,7 @@ The policy may be selected according to available memory:
     \right].
 \end{equation}
 
-Regeneration is considered successful when all required elementary-link generation and swapping operations succeed.
+Regeneration is considered successful only when the required elementary-link generation, entanglement swapping, and coordination operations are completed successfully.
 
 Let
 
@@ -2313,9 +2132,9 @@ Let
     \{0,1\}
 \end{equation}
 
-denote the regeneration outcome.
+denote the regeneration outcome of artificial e-link $(i,j)$ at time slot $t$.
 
-The success probability is approximated as
+The regeneration success probability is approximated as
 
 \begin{equation}
     P
@@ -2323,17 +2142,19 @@ The success probability is approximated as
     Z_{ij}^{\mathrm{regen}}(t)=1
     \right]
     =
+    P_{ij}^{\mathrm{regen}}
+    =
     P_{\mathrm{succ}}
     \left(
     P_{ij}^{\mathrm{gen}}
     \right).
 \end{equation}
 
-If regeneration fails, the e-link remains in its previous state under replace-after-success operation. Under discard-before-generation operation, the link remains unavailable until another regeneration attempt succeeds.
+If regeneration fails, the e-link remains in its previous state under the replace-after-success strategy. Under the discard-before-generation strategy, the e-link remains unavailable until a subsequent regeneration attempt succeeds.
 
-Reactive route repair uses the same regeneration mechanism but with request-specific priority.
+Reactive route repair uses the same regeneration mechanism but assigns additional priority according to the blocked request.
 
-For a repairable route $R$, the repair priority of a critical e-link may be increased by
+For a repairable route $R$, the repair priority of a critical e-link is increased by
 
 \begin{equation}
     \Pi_{ij}^{\mathrm{repair}}(R,t)
@@ -2357,11 +2178,11 @@ where
     \right].
 \end{equation}
 
-This request-specific term gives immediate priority to links whose regeneration can restore a currently blocked route.
+This request-specific term provides higher priority to links whose regeneration can restore a currently infeasible route.
 
 A regeneration action is approved only when its expected benefit exceeds its expected cost.
 
-The expected utility is defined as
+The expected regeneration utility is defined as
 
 \begin{equation}
     U_{ij}^{\mathrm{regen}}(t)
@@ -2376,7 +2197,7 @@ The expected utility is defined as
     C_{ij}^{\mathrm{regen}},
 \end{equation}
 
-where $G_{ij}^{\mathrm{future}}(t)$ represents the predicted future routing benefit of refreshing the e-link.
+where $G_{ij}^{\mathrm{future}}(t)$ represents the predicted future routing benefit obtained by refreshing artificial e-link $(i,j)$.
 
 Regeneration is executed only if
 
@@ -2386,10 +2207,11 @@ Regeneration is executed only if
     0.
 \end{equation}
 
-This condition prevents the controller from repeatedly regenerating low-value links solely because their fidelity is decreasing.
+This condition prevents unnecessary regeneration of low-impact e-links whose expected routing benefit does not justify the required generation resources and delay.
 
-The proposed proactive-regeneration mechanism therefore balances freshness, fidelity, structural importance, expected demand, memory availability, physical-generation capacity, and regeneration overhead.
+The proposed proactive-regeneration mechanism therefore balances temporal freshness, fidelity preservation, structural importance, future demand, memory availability, physical-generation capacity, and regeneration overhead.
 \section{Overlay Maintenance Strategy}
+
 The overlay-maintenance strategy updates the artificial entanglement overlay according to temporal degradation, routing demand, memory availability, and compact-routing constraints.
 
 Its purpose is not to keep every artificial e-link permanently fresh. Instead, the strategy maintains a bounded set of useful e-links whose expected routing benefit justifies their generation and storage cost.
@@ -2430,6 +2252,7 @@ For each artificial e-link $(i,j)$, the maintenance action is denoted by
     \right\}.
 \end{equation}
 
+
 \subsection{Retention Decision}
 
 An e-link is retained without regeneration when it remains temporally reliable and sufficiently useful.
@@ -2466,11 +2289,12 @@ and
     \delta_{\mathrm{safe}}.
 \end{equation}
 
+
 \subsection{Regeneration Decision}
 
 A critical e-link is considered for regeneration when its expected future routing benefit is high and its regeneration cost is acceptable.
 
-The regeneration decision is
+The regeneration decision follows the previously defined variable:
 
 \begin{equation}
     r_{ij}(t)
@@ -2494,9 +2318,10 @@ The total number of regeneration actions satisfies
     R_{\max}.
 \end{equation}
 
+
 \subsection{Replacement Decision}
 
-Replacement changes the endpoint pair or physical realization of an artificial e-link when repeated regeneration is inefficient or when the existing link has limited routing value.
+Replacement changes the endpoint pair or physical realization of an artificial e-link when repeated regeneration becomes inefficient or when the existing link has limited routing value.
 
 Let
 
@@ -2522,7 +2347,7 @@ or when
     0.
 \end{equation}
 
-A replacement candidate may also be identified when its structural importance is low while another non-stored e-link offers greater predicted benefit.
+A replacement candidate may also be identified when its structural importance is low while another non-stored e-link provides higher predicted benefit.
 
 Let
 
@@ -2547,17 +2372,8 @@ For a candidate new e-link $(u,v)$, the predicted placement utility is defined a
     G_{uv}^{\mathrm{connect}}(t)
     -
     \theta_R
-    \widehat{C}_{R}(u,v,t),
+    \widehat{C}_{R}(u,v,t).
 \end{equation}
-
-where
-
-\begin{itemize}
-    \item $Q_{uv}^{\mathrm{demand}}(t)$ is the predicted demand relevance;
-    \item $I_{uv}^{\mathrm{struct}}$ is the structural importance;
-    \item $G_{uv}^{\mathrm{connect}}(t)$ is the expected connectivity gain; and
-    \item $\widehat{C}_{R}(u,v,t)$ is the normalized generation or regeneration cost.
-\end{itemize}
 
 The weights satisfy
 
@@ -2583,13 +2399,14 @@ A stored e-link $(i,j)$ may be replaced by candidate $(u,v)$ when
     \Delta U_{\min},
 \end{equation}
 
-where $\Delta U_{\min}$ is a minimum replacement-gain threshold.
+where $U_{ij}^{\mathrm{retain}}(t)$ represents the predicted utility of keeping the existing artificial e-link without replacement.
 
-This threshold prevents frequent overlay changes caused by small utility fluctuations.
+The threshold $\Delta U_{\min}$ prevents frequent overlay changes caused by small utility fluctuations.
+
 
 \subsection{Discard Decision}
 
-An artificial e-link is discarded when it is expired, repeatedly unused, structurally redundant, or too expensive to regenerate.
+An artificial e-link is discarded when it becomes expired, repeatedly unused, structurally redundant, or too expensive to maintain.
 
 The discard indicator is
 
@@ -2609,10 +2426,10 @@ It is defined as
     S_{ij}^{\mathrm{state}}(t)
     =
     \mathrm{Expired}
-    \right]
+    \right].
 \end{equation}
 
-or when all of the following conditions hold:
+A non-expired link may also be discarded when the following redundancy conditions are simultaneously satisfied:
 
 \begin{equation}
     H_{ij}^{\mathrm{use}}(t)
@@ -2638,7 +2455,7 @@ An e-link is not discarded when doing so would violate a required compact-overla
 
 \subsection{Compact-Overlay Constraints}
 
-For every ESP $v_i$, the number of stored artificial e-links is bounded by
+For every ESP $v_i$, the number of maintained routing-table entries is bounded by
 
 \begin{equation}
     |\mathcal{T}_i(t)|
@@ -2653,24 +2470,20 @@ where
     =
     c_{\mathrm{tab}}
     \sqrt{n_e}
-    \log n_e.
+    \log n_e .
 \end{equation}
 
-In the Partial-Anchor Scheme, local and anchor-link requirements must be preserved:
+This constraint preserves the compact-routing property by preventing each ESP from maintaining complete global routing information.
+
+In the Partial-Anchor Scheme, the required local and anchor connectivity structures must be preserved:
 
 \begin{equation}
     E_{\mathrm{local}}^{\mathrm{req}}
     \subseteq
-    E_{\mathrm{A}}^{\mathrm{PA}}(t)
+    E_{\mathrm{A}}^{\mathrm{PA}}(t).
 \end{equation}
 
-and
-
-\begin{equation}
-    G_{\mathrm{anchor}}(t)
-\end{equation}
-
-must remain connected whenever sufficient physical resources exist.
+In addition, the anchor overlay subgraph should remain connected whenever sufficient physical entanglement resources are available.
 
 In the Full-Anchor Scheme, each ESP maintains a bounded tracked-link set:
 
@@ -2682,11 +2495,12 @@ In the Full-Anchor Scheme, each ESP maintains a bounded tracked-link set:
     L_{\max}^{\mathrm{track}}.
 \end{equation}
 
-New tracked links are admitted only after an existing tracked link is removed or when unused table capacity is available.
+New tracked links are admitted only when available routing-table capacity exists or when an existing tracked link is removed.
+
 
 \subsection{Memory-Aware Maintenance}
 
-The overlay-maintenance strategy must satisfy the memory constraint
+The overlay-maintenance strategy must satisfy the quantum-memory constraint
 
 \begin{equation}
     \sum_{
@@ -2701,10 +2515,10 @@ The overlay-maintenance strategy must satisfy the memory constraint
     \qquad
     \forall v_i
     \in
-    V_2.
+    V_2 .
 \end{equation}
 
-When memory is insufficient, the controller releases e-links according to a discard priority.
+When memory capacity becomes insufficient, the controller releases artificial e-links according to a discard-priority score.
 
 The discard-priority score is defined as
 
@@ -2741,13 +2555,14 @@ where
     \right].
 \end{equation}
 
-The highest-scoring discard candidates are released first, subject to connectivity preservation.
+Links with higher discard priority are released first while preserving required compact-overlay connectivity.
+
 
 \subsection{Maintenance Triggering}
 
-Overlay maintenance may be executed periodically or event-driven.
+Overlay maintenance may be executed periodically or through event-driven triggers.
 
-Periodic maintenance is triggered every
+Periodic maintenance is performed every
 
 \begin{equation}
     \tau_{\mathrm{maint}}
@@ -2763,7 +2578,7 @@ Event-driven maintenance is triggered when one of the following conditions occur
     \mathrm{Critical}
 \end{equation}
 
-for a structurally important link,
+for a structurally important e-link,
 
 \begin{equation}
     S_{ij}^{\mathrm{state}}(t)
@@ -2777,7 +2592,7 @@ for a structurally important link,
     M_i,
 \end{equation}
 
-or when the temporal disconnection rate exceeds a threshold:
+or
 
 \begin{equation}
     P_{\mathrm{disc}}(t)
@@ -2785,13 +2600,13 @@ or when the temporal disconnection rate exceeds a threshold:
     P_{\mathrm{disc}}^{\max}.
 \end{equation}
 
-To avoid excessive reconfiguration, a minimum holding interval
+To prevent excessive overlay reconfiguration, a minimum holding interval
 
 \begin{equation}
     \tau_{\mathrm{hold}}
 \end{equation}
 
-is enforced between two structural changes involving the same routing-table entry.
+is enforced between two structural changes affecting the same routing-table entry.
 
 \subsection{Overlay-State Update}
 
@@ -2807,9 +2622,9 @@ Let
     E_{\mathrm{drop}}(t)
 \end{equation}
 
-denote the retained, successfully regenerated, successfully created, and discarded e-link sets.
+denote the sets of retained, successfully regenerated, newly established, and discarded artificial e-links, respectively.
 
-The updated artificial overlay is
+The updated artificial overlay edge set is defined as
 
 \begin{equation}
     E_{\mathrm{A}}(t+1)
@@ -2825,15 +2640,18 @@ The updated artificial overlay is
     E_{\mathrm{drop}}(t).
 \end{equation}
 
-The corresponding routing tables are updated only after successful link creation or regeneration is confirmed through classical heralding.
+The corresponding routing tables are updated only after successful entanglement generation or regeneration is confirmed through classical heralding information.
 
-The maintenance strategy is therefore conservative: a routing entry is not advertised as usable until the corresponding artificial entanglement has been successfully established and its initial temporal state has been recorded.
+Therefore, a routing entry is not advertised as usable until the corresponding artificial e-link has been successfully established and its initial temporal state has been recorded.
 
-The proposed strategy balances temporal reliability and resource efficiency by preserving useful links, selectively refreshing critical links, replacing inefficient links, and discarding stale or low-value links while maintaining the compact structure of the overlay.
+The proposed maintenance strategy balances temporal reliability and resource efficiency by preserving useful links, selectively regenerating critical links, replacing inefficient links, and removing stale or low-value links while maintaining the compact structure of the artificial overlay.
+
+
 \section{Proposed Routing Algorithm}
-The proposed routing algorithm combines temporal-state monitoring, compact candidate construction, temporal-feasibility filtering, time-dependent route selection, and selective e-link regeneration.
 
-The algorithm is executed for each time slot $t$ and processes the active entanglement-request set
+The proposed routing algorithm integrates temporal-state monitoring, compact candidate construction, temporal-feasibility filtering, time-dependent route selection, and selective artificial e-link regeneration.
+
+The algorithm is executed at each time slot $t$ and processes the active entanglement-request set
 
 \begin{equation}
     \mathcal{D}(t).
@@ -2853,7 +2671,7 @@ The main inputs are
     \mathcal{M}(t),
 \end{equation}
 
-together with the fidelity, coherence, delay, memory, and regeneration parameters.
+together with fidelity, coherence, delay, memory, and regeneration parameters.
 
 The main outputs are
 
@@ -2867,383 +2685,349 @@ The main outputs are
     G_{\mathrm{A}}(t+1),
 \end{equation}
 
-where $\mathcal{Y}(t)$ contains the selected routes and their execution outcomes.
+where $\mathcal{Y}(t)$ contains selected routes and their execution outcomes.
 
-The complete procedure is described below.
+The complete procedure is described as follows.
+
 
 \subsection{Algorithmic Procedure}
 
 \begin{enumerate}
-    \item \textbf{Update temporal e-link states.}
 
-    For every artificial e-link $(i,j)\in E_{\mathrm{A}}(t)$, update
+\item \textbf{Update temporal e-link states.}
 
-    \begin{equation}
-        A_{ij}(t),
-        \quad
-        F_{ij}^{\mathrm{eff}}(t),
-        \quad
-        \widehat{F}_{ij}^{\mathrm{cons}}(t),
-        \quad
-        B_{ij}(t),
-        \quad
-        H_{ij}^{\mathrm{use}}(t).
-    \end{equation}
+For every artificial e-link $(i,j)\in E_{\mathrm{A}}(t)$, update
 
-    Classify each e-link as safe, warning, critical, or expired.
+\begin{equation}
+    A_{ij}(t),
+    \quad
+    F_{ij}^{\mathrm{eff}}(t),
+    \quad
+    \widehat{F}_{ij}^{\mathrm{cons}}(t),
+    \quad
+    B_{ij}(t),
+    \quad
+    H_{ij}^{\mathrm{use}}(t).
+\end{equation}
 
-    \item \textbf{Construct the temporally usable overlay.}
+Each e-link is classified as safe, warning, critical, or expired according to the temporal-state classification rules.
 
-    Form
 
-    \begin{equation}
-        E_{\mathrm{U}}(t)
-        =
-        \left\{
-        (i,j)
-        \in
-        E_{\mathrm{A}}(t)
-        :
-        S_{ij}^{\mathrm{state}}(t)
-        \in
-        \{
-        \mathrm{Safe},
-        \mathrm{Warning}
-        \}
-        \right\}.
-    \end{equation}
+\item \textbf{Construct the temporally usable overlay.}
 
-    Then construct
+The usable edge set is constructed as
 
-    \begin{equation}
-        G_{\mathrm{U}}(t)
-        =
-        \left(
-        V_2,
-        E_{\mathrm{U}}(t)
-        \right).
-    \end{equation}
+\begin{equation}
+    E_{\mathrm{U}}(t)
+    =
+    \left\{
+    (i,j)
+    \in
+    E_{\mathrm{A}}(t)
+    :
+    S_{ij}^{\mathrm{state}}(t)
+    \in
+    \{
+    \mathrm{Safe},
+    \mathrm{Warning}
+    \}
+    \right\}.
+\end{equation}
 
-    \item \textbf{Process each entanglement request.}
+The temporally usable overlay is then defined as
 
-    For every request
+\begin{equation}
+    G_{\mathrm{U}}(t)
+    =
+    \left(
+    V_2,
+    E_{\mathrm{U}}(t)
+    \right).
+\end{equation}
 
-    \begin{equation}
-        (s,d)
-        \in
-        \mathcal{D}(t),
-    \end{equation}
 
-    generate a compact candidate-route set
+\item \textbf{Process each entanglement request.}
 
-    \begin{equation}
-        \mathcal{R}_{s,d}^{\mathrm{cand}}(t).
-    \end{equation}
+For every request
 
-    The candidate set contains at most $K_{\max}$ routes.
+\begin{equation}
+    (s,d)
+    \in
+    \mathcal{D}(t),
+\end{equation}
 
-    \item \textbf{Evaluate direct temporal feasibility.}
+the controller generates a compact candidate-route set
 
-    For each candidate route $R$, calculate
+\begin{equation}
+    \mathcal{R}_{s,d}^{\mathrm{cand}}(t).
+\end{equation}
 
-    \begin{equation}
-        \chi_{\mathrm{avail}}(R,t),
-        \quad
-        \chi_{\mathrm{linkF}}(R,t),
-        \quad
-        \chi_{\mathrm{coh}}(R,t),
-    \end{equation}
+The candidate set contains no more than $K_{\max}$ routes.
 
-    \begin{equation}
-        \chi_{\mathrm{endF}}(R,t),
-        \quad
-        \chi_{\mathrm{delay}}(R,t),
-        \quad
-        \chi_{\mathrm{mem}}(R,t).
-    \end{equation}
+
+\item \textbf{Evaluate direct temporal feasibility.}
+
+For every candidate route $R$, calculate
+
+\begin{equation}
+    \chi_{\mathrm{avail}}(R,t),
+    \quad
+    \chi_{\mathrm{linkF}}(R,t),
+    \quad
+    \chi_{\mathrm{coh}}(R,t),
+\end{equation}
+
+and
+
+\begin{equation}
+    \chi_{\mathrm{endF}}(R,t),
+    \quad
+    \chi_{\mathrm{delay}}(R,t),
+    \quad
+    \chi_{\mathrm{mem}}(R,t).
+\end{equation}
 
     The overall feasibility indicator is
 
-    \begin{equation}
-        \chi_{s,d}(R,t)
-        =
-        \chi_{\mathrm{avail}}
-        \chi_{\mathrm{linkF}}
-        \chi_{\mathrm{coh}}
-        \chi_{\mathrm{endF}}
-        \chi_{\mathrm{delay}}
-        \chi_{\mathrm{mem}}.
-    \end{equation}
-
-    \item \textbf{Build the directly feasible route set.}
-
-    Define
-
-    \begin{equation}
-        \mathcal{R}_{s,d}^{\mathrm{TF}}(t)
-        =
-        \left\{
-        R
-        \in
-        \mathcal{R}_{s,d}^{\mathrm{cand}}(t)
-        :
-        \chi_{s,d}(R,t)=1
-        \right\}.
-    \end{equation}
-
-    \item \textbf{Select a directly feasible route.}
-
-    If
-
-    \begin{equation}
-        \mathcal{R}_{s,d}^{\mathrm{TF}}(t)
-        \neq
-        \emptyset,
-    \end{equation}
-
-    calculate the complete time-dependent cost of every feasible route:
-
-    \begin{equation}
-        W_t(R).
-    \end{equation}
-
-    Select
-
-    \begin{equation}
-        R_{s,d}^{*}(t)
-        =
-        \arg\min_{
-        R
-        \in
-        \mathcal{R}_{s,d}^{\mathrm{TF}}(t)
-        }
-        W_t(R).
-    \end{equation}
-
-    Reserve the required e-bits and execute the planned swapping operations.
-
-    \item \textbf{Construct the repairable route set.}
-
-    If no directly feasible route exists, identify candidates containing a bounded number of regenerable critical links.
-
-    Define
-
-    \begin{equation}
-        \mathcal{R}_{s,d}^{\mathrm{repair}}(t)
-        =
-        \left\{
-        R
-        \in
-        \mathcal{R}_{s,d}^{\mathrm{cand}}(t)
-        :
-        \widehat{D}_{s,d}^{\mathrm{repair}}(R,t)
-        \leq
-        D_{\max}^{\mathrm{repair}},
-    \right.
-    \end{equation}
-
-    \begin{equation}
-        \left.
-        C_{s,d}^{\mathrm{repair}}(R,t)
-        \leq
-        C_{\max}^{\mathrm{repair}}
-        \right\}.
-    \end{equation}
-
-    \item \textbf{Select a repairable route.}
-
-    If
-
-    \begin{equation}
-        \mathcal{R}_{s,d}^{\mathrm{repair}}(t)
-        \neq
-        \emptyset,
-    \end{equation}
-
-    calculate
-
-    \begin{equation}
-        W_t^{\mathrm{repair}}(R)
-        =
-        W_t(R)
-        +
-        \rho_D
-        \widehat{D}_{s,d}^{\mathrm{repair}}(R,t)
-        +
-        \rho_C
-        C_{s,d}^{\mathrm{repair}}(R,t).
-    \end{equation}
-
-    Select
-
-    \begin{equation}
-        R_{s,d}^{\mathrm{repair},*}(t)
-        =
-        \arg\min_{
-        R
-        \in
-        \mathcal{R}_{s,d}^{\mathrm{repair}}(t)
-        }
-        W_t^{\mathrm{repair}}(R).
-    \end{equation}
-
-    Add the critical e-links of this route to the request-specific regeneration queue.
-
-    \item \textbf{Reject or postpone infeasible requests.}
-
-    If both
-
-    \begin{equation}
-        \mathcal{R}_{s,d}^{\mathrm{TF}}(t)
-        =
-        \emptyset
-    \end{equation}
-
-    and
-
-    \begin{equation}
-        \mathcal{R}_{s,d}^{\mathrm{repair}}(t)
-        =
-        \emptyset,
-    \end{equation}
-
-    classify the request as temporarily infeasible.
-
-    Depending on the request deadline, the controller either postpones or rejects it.
-
-    \item \textbf{Calculate proactive regeneration priorities.}
-
-    For every critical artificial e-link, calculate
-
-    \begin{equation}
-        \Pi_{ij}^{\mathrm{regen}}(t).
-    \end{equation}
-
-    Request-specific critical links receive an additional repair-priority term.
-
-    \item \textbf{Select regeneration actions.}
-
-    Rank regeneration candidates by priority and expected utility.
-
-    Select
-
-    \begin{equation}
-        \mathcal{E}_{\mathrm{regen}}^{*}(t)
-    \end{equation}
-
-    subject to
-
-    \begin{equation}
-        \left|
-        \mathcal{E}_{\mathrm{regen}}^{*}(t)
-        \right|
-        \leq
-        R_{\max},
-    \end{equation}
-
-    memory constraints, and physical-generation capacity.
-
-    \item \textbf{Execute overlay-maintenance actions.}
-
-    Retain useful links, regenerate selected critical links, replace inefficient links, and discard expired or low-value links.
-
-    \item \textbf{Update the artificial overlay.}
-
-    After receiving generation and swapping outcomes, update
-
-    \begin{equation}
-        E_{\mathrm{A}}(t+1)
-        =
-        \left(
-        E_{\mathrm{retain}}(t)
-        \cup
-        E_{\mathrm{regen}}^{\mathrm{succ}}(t)
-        \cup
-        E_{\mathrm{new}}^{\mathrm{succ}}(t)
-        \right)
-        \setminus
-        E_{\mathrm{drop}}(t).
-    \end{equation}
-
-    \item \textbf{Update compact routing tables.}
-
-    Add a routing-table entry only after the corresponding artificial e-link is successfully established and classically confirmed.
-
-    Remove entries associated with consumed, discarded, or permanently unavailable e-links.
-\end{enumerate}
-
-\subsection{Routing-Decision Logic}
-
-The route-decision result for request $(s,d)$ is represented by
-
 \begin{equation}
-    \Gamma_{s,d}(t)
+    \chi_{s,d}(R,t)
     =
-    \begin{cases}
-        \mathrm{Direct},
-        & \mathcal{R}_{s,d}^{\mathrm{TF}}(t)
-        \neq
-        \emptyset,\\
-        \mathrm{Repair},
-        & \mathcal{R}_{s,d}^{\mathrm{TF}}(t)
-        =
-        \emptyset
-        \ \land\
-        \mathcal{R}_{s,d}^{\mathrm{repair}}(t)
-        \neq
-        \emptyset,\\
-        \mathrm{Postpone},
-        & \text{no route exists but the deadline permits waiting},\\
-        \mathrm{Reject},
-        & \text{the request cannot be completed within its constraints}.
-    \end{cases}
+    \chi_{\mathrm{avail}}(R,t)
+    \chi_{\mathrm{linkF}}(R,t)
+    \chi_{\mathrm{coh}}(R,t)
+    \chi_{\mathrm{endF}}(R,t)
+    \chi_{\mathrm{delay}}(R,t)
+    \chi_{\mathrm{mem}}(R,t).
 \end{equation}
 
-Directly feasible requests are processed first because they require no additional generation delay.
 
-Repairable requests are ordered according to request urgency and expected repair cost.
+\item \textbf{Build the directly feasible route set.}
 
-A request-priority score may be defined as
+The temporally feasible route set is defined as
 
 \begin{equation}
-    \Pi_{s,d}^{\mathrm{req}}(t)
+    \mathcal{R}_{s,d}^{\mathrm{TF}}(t)
     =
-    \zeta_1
-    \frac{
-    1
-    }{
-    D_{s,d}^{\mathrm{deadline}}(t)+\varepsilon
+    \left\{
+    R
+    \in
+    \mathcal{R}_{s,d}^{\mathrm{cand}}(t)
+    :
+    \chi_{s,d}(R,t)=1
+    \right\}.
+\end{equation}
+
+
+\item \textbf{Select a directly feasible route.}
+
+If
+
+\begin{equation}
+    \mathcal{R}_{s,d}^{\mathrm{TF}}(t)
+    \neq
+    \emptyset,
+\end{equation}
+
+the controller calculates the complete time-dependent cost
+
+\begin{equation}
+    W_t(R)
+\end{equation}
+
+for every feasible route.
+
+The selected route is
+
+\begin{equation}
+    R_{s,d}^{*}(t)
+    =
+    \arg\min_{
+    R
+    \in
+    \mathcal{R}_{s,d}^{\mathrm{TF}}(t)
     }
-    +
-    \zeta_2
-    Q_{s,d}^{\mathrm{service}}
-    -
-    \zeta_3
-    C_{s,d}^{\mathrm{repair}}(t),
+    W_t(R).
 \end{equation}
 
-where $Q_{s,d}^{\mathrm{service}}$ represents the request service class.
+The required e-bits are reserved and the planned swapping operations are executed.
 
+
+\item \textbf{Construct the repairable route set.}
+
+If no directly feasible route exists, candidate routes containing a bounded number of regenerable critical links are considered.
+
+The repairable route set is defined as
+
+\begin{equation}
+    \mathcal{R}_{s,d}^{\mathrm{repair}}(t)
+    =
+    \left\{
+    R
+    \in
+    \mathcal{R}_{s,d}^{\mathrm{cand}}(t)
+    :
+    \widehat{D}_{s,d}^{\mathrm{repair}}(R,t)
+    \leq
+    D_{\max}^{\mathrm{repair}}
+    \land
+    C_{s,d}^{\mathrm{repair}}(R,t)
+    \leq
+    C_{\max}^{\mathrm{repair}}
+    \right\}.
+\end{equation}
+
+
+\item \textbf{Select a repairable route.}
+
+If
+
+\begin{equation}
+    \mathcal{R}_{s,d}^{\mathrm{repair}}(t)
+    \neq
+    \emptyset,
+\end{equation}
+
+the repair-aware cost is calculated as
+
+\begin{equation}
+    W_t^{\mathrm{repair}}(R)
+    =
+    W_t(R)
+    +
+    \rho_D
+    \widehat{D}_{s,d}^{\mathrm{repair}}(R,t)
+    +
+    \rho_C
+    C_{s,d}^{\mathrm{repair}}(R,t).
+\end{equation}
+
+The selected repairable route is
+
+\begin{equation}
+    R_{s,d}^{\mathrm{repair},*}(t)
+    =
+    \arg\min_{
+    R
+    \in
+    \mathcal{R}_{s,d}^{\mathrm{repair}}(t)
+    }
+    W_t^{\mathrm{repair}}(R).
+\end{equation}
+
+The critical e-links of this route are added to the request-specific regeneration queue.
+
+
+\item \textbf{Reject or postpone infeasible requests.}
+
+If both
+
+\begin{equation}
+    \mathcal{R}_{s,d}^{\mathrm{TF}}(t)
+    =
+    \emptyset
+\end{equation}
+
+and
+
+\begin{equation}
+    \mathcal{R}_{s,d}^{\mathrm{repair}}(t)
+    =
+    \emptyset,
+\end{equation}
+
+the request is classified as temporarily infeasible.
+
+Depending on the request deadline, the controller either postpones or rejects the request.
+
+
+\item \textbf{Calculate proactive regeneration priorities.}
+
+For every critical artificial e-link, calculate
+
+\begin{equation}
+    \Pi_{ij}^{\mathrm{regen}}(t).
+\end{equation}
+
+Request-specific critical links receive an additional repair-priority term.
+
+
+\item \textbf{Select regeneration actions.}
+
+Regeneration candidates are ranked according to priority and expected utility.
+
+The selected regeneration set is
+
+\begin{equation}
+    \mathcal{E}_{\mathrm{regen}}^{*}(t),
+\end{equation}
+
+subject to
+
+\begin{equation}
+    \left|
+    \mathcal{E}_{\mathrm{regen}}^{*}(t)
+    \right|
+    \leq
+    R_{\max},
+\end{equation}
+
+memory constraints, and physical-generation capacity constraints.
+
+
+\item \textbf{Execute overlay-maintenance actions.}
+
+Useful links are retained, selected critical links are regenerated, inefficient links are replaced, and expired or low-value links are discarded.
+
+
+\item \textbf{Update the artificial overlay.}
+
+After receiving generation and swapping outcomes, update
+
+\begin{equation}
+    E_{\mathrm{A}}(t+1)
+    =
+    \left(
+    E_{\mathrm{retain}}(t)
+    \cup
+    E_{\mathrm{regen}}^{\mathrm{succ}}(t)
+    \cup
+    E_{\mathrm{new}}^{\mathrm{succ}}(t)
+    \right)
+    \setminus
+    E_{\mathrm{drop}}(t).
+\end{equation}
+
+
+\item \textbf{Update compact routing tables.}
+
+A routing-table entry is added only after the corresponding artificial e-link is successfully established and confirmed through classical communication.
+
+Entries associated with consumed, discarded, or permanently unavailable e-links are removed.
 \subsection{Algorithm Characteristics}
 
-The proposed algorithm is heuristic rather than globally optimal. It does not solve the complete joint route-selection and overlay-maintenance optimization problem at every time slot.
+The proposed algorithm is heuristic rather than globally optimal. It does not solve the complete joint optimization problem involving route selection, regeneration scheduling, and overlay maintenance at every time slot.
 
-Instead, it reduces computational cost through
+Instead, the computational cost is reduced through
 
 \begin{itemize}
     \item compact routing-state restriction;
     \item bounded candidate-route generation;
     \item early temporal-feasibility filtering;
-    \item additive route-cost evaluation;
-    \item bounded regeneration actions; and
+    \item additive time-dependent route-cost evaluation;
+    \item bounded regeneration operations; and
     \item threshold-based overlay maintenance.
 \end{itemize}
 
-The algorithm is deterministic for fixed network state, parameter values, candidate ordering, and tie-breaking rules. Randomness arises only from physical entanglement generation, decoherence events, and probabilistic swapping outcomes.
+For a fixed network state, parameter configuration, candidate ordering, and tie-breaking rule, the algorithm produces deterministic routing decisions.
 
-The effectiveness of the method will be evaluated by comparing it with static compact routing, fidelity-only routing, age-only routing, shortest-path routing, and regeneration-disabled variants.
+Randomness appears only from physical entanglement generation processes, decoherence behavior, and probabilistic swapping operations.
+
+The performance of the proposed method is evaluated by comparison with static compact routing, fidelity-only routing, age-only routing, shortest-path routing, and regeneration-disabled variants.
+
+
 \section{Computational Complexity Analysis}
-The computational complexity of the proposed method depends on temporal-state monitoring, candidate-route construction, feasibility filtering, route-cost evaluation, and regeneration-priority calculation.
+
+The computational complexity of the proposed method consists of temporal-state monitoring, candidate-route construction, temporal-feasibility evaluation, route-cost calculation, and regeneration-priority computation.
 
 Let
 
@@ -3253,7 +3037,7 @@ Let
     |V_2|
 \end{equation}
 
-denote the number of Entanglement Service Providers, and let
+denote the number of Entanglement Service Providers (ESPs), and let
 
 \begin{equation}
     m_{\mathrm{A}}(t)
@@ -3261,35 +3045,34 @@ denote the number of Entanglement Service Providers, and let
     |E_{\mathrm{A}}(t)|
 \end{equation}
 
-denote the number of stored artificial e-links at time $t$.
+denote the number of stored artificial e-links at time slot $t$.
 
-Let
+The number of active entanglement requests at time $t$ is
 
 \begin{equation}
     D_t
     =
-    |\mathcal{D}(t)|
+    |\mathcal{D}(t)|.
 \end{equation}
 
-be the number of entanglement requests processed in time slot $t$.
-
-The maximum number of candidate routes generated for one request is denoted by
+The maximum number of candidate routes generated for each request is denoted by
 
 \begin{equation}
     K_{\max},
 \end{equation}
 
-and the maximum number of artificial e-links in one candidate route is denoted by
+while the maximum number of artificial e-links contained in one candidate route is denoted by
 
 \begin{equation}
     H_{\max}.
 \end{equation}
 
+
 \subsection{Temporal-State Monitoring Complexity}
 
-The temporal-state monitor updates the age, effective fidelity, predicted consumption fidelity, coherence budget, utilization score, and state classification of every stored artificial e-link.
+The temporal-state monitoring module updates the age, effective fidelity, predicted consumption fidelity, remaining coherence budget, utilization score, and state classification of every stored artificial e-link.
 
-Each update requires a constant number of arithmetic operations. Therefore, the monitoring complexity is
+Since each update requires a constant number of operations, the monitoring complexity is
 
 \begin{equation}
     O
@@ -3298,7 +3081,7 @@ Each update requires a constant number of arithmetic operations. Therefore, the 
     \right).
 \end{equation}
 
-The corresponding storage requirement is also
+The memory requirement for storing temporal-state information is also
 
 \begin{equation}
     O
@@ -3307,20 +3090,20 @@ The corresponding storage requirement is also
     \right),
 \end{equation}
 
-because one temporal-state record is maintained for each stored artificial e-link.
+because one temporal-state record is maintained for each artificial e-link.
+
 
 \subsection{Candidate-Route Construction Complexity}
 
-Candidate-route construction is restricted to the compact artificial overlay.
+Candidate-route construction is performed on the temporally usable compact overlay rather than the complete physical network.
 
-When a shortest-path or bounded $K$-shortest-path procedure is applied to the usable overlay, the initial shortest-path search can be implemented using Dijkstra's algorithm.
-
-For a graph represented by adjacency lists and a binary heap, the complexity is
+When Dijkstra's algorithm or a bounded $K$-shortest-path method is applied to the usable overlay, the shortest-path computation using adjacency lists and a binary heap has complexity
 
 \begin{equation}
     O
     \left(
-    m_{\mathrm{U}}(t)\log n
+    m_{\mathrm{U}}(t)
+    \log n
     \right),
 \end{equation}
 
@@ -3332,7 +3115,7 @@ where
     |E_{\mathrm{U}}(t)|.
 \end{equation}
 
-For at most $K_{\max}$ candidate routes, a conservative upper bound is
+For generating at most $K_{\max}$ candidate routes, a conservative upper bound is
 
 \begin{equation}
     O
@@ -3343,9 +3126,9 @@ For at most $K_{\max}$ candidate routes, a conservative upper bound is
     \right).
 \end{equation}
 
-In practice, candidate construction is cheaper because the search is restricted by compact routing tables, anchor sets, tracked links, and the maximum-hop constraint.
+In practice, the computational cost is lower because candidate generation is restricted by compact routing tables, anchor structures, tracked long-range links, and maximum-hop constraints.
 
-If every ESP stores at most
+If every ESP maintains at most
 
 \begin{equation}
     T_{\max}
@@ -3356,13 +3139,13 @@ If every ESP stores at most
     \right)
 \end{equation}
 
-routing entries, then the local branching factor remains substantially smaller than that of a complete artificial overlay.
+routing entries, the local search space remains significantly smaller than unrestricted global path enumeration.
 
 \subsection{Temporal-Feasibility Filtering Complexity}
 
-For each candidate route, the feasibility module evaluates every artificial e-link on that route.
+For each candidate route, the temporal-feasibility module evaluates every artificial e-link contained in the route.
 
-A route contains at most $H_{\max}$ artificial e-links. Therefore, link availability, link fidelity, coherence budget, and resource checks require
+Since a candidate route contains at most $H_{\max}$ artificial e-links, the availability, fidelity, coherence-budget, and resource-availability checks require
 
 \begin{equation}
     O
@@ -3371,9 +3154,9 @@ A route contains at most $H_{\max}$ artificial e-links. Therefore, link availabi
     \right)
 \end{equation}
 
-time per candidate route.
+computational complexity per candidate route.
 
-End-to-end fidelity calculation also requires a product over at most $H_{\max}$ link parameters and swapping-retention factors. Its complexity is therefore
+The end-to-end fidelity estimation also requires a product operation over at most $H_{\max}$ link parameters and swapping-retention factors. Therefore, its complexity is
 
 \begin{equation}
     O
@@ -3382,7 +3165,7 @@ End-to-end fidelity calculation also requires a product over at most $H_{\max}$ 
     \right).
 \end{equation}
 
-For at most $K_{\max}$ candidate routes, the total feasibility-filtering complexity per request is
+For at most $K_{\max}$ candidate routes, the total feasibility-filtering complexity for one request is
 
 \begin{equation}
     O
@@ -3391,7 +3174,7 @@ For at most $K_{\max}$ candidate routes, the total feasibility-filtering complex
     \right).
 \end{equation}
 
-For all requests in time slot $t$, the complexity is
+For all entanglement requests in time slot $t$, the total complexity becomes
 
 \begin{equation}
     O
@@ -3400,9 +3183,10 @@ For all requests in time slot $t$, the complexity is
     \right).
 \end{equation}
 
+
 \subsection{Time-Dependent Route-Selection Complexity}
 
-After filtering, let
+After feasibility filtering, let
 
 \begin{equation}
     K_{\mathrm{TF}}
@@ -3410,9 +3194,9 @@ After filtering, let
     K_{\max}
 \end{equation}
 
-denote the number of directly feasible routes.
+denote the number of temporally feasible candidate routes.
 
-Computing the complete additive cost of one route requires visiting at most $H_{\max}$ e-links. Therefore, route-cost evaluation requires
+The complete time-dependent cost evaluation of one route requires examining at most $H_{\max}$ artificial e-links. Therefore, evaluating all feasible routes requires
 
 \begin{equation}
     O
@@ -3421,9 +3205,9 @@ Computing the complete additive cost of one route requires visiting at most $H_{
     \right)
 \end{equation}
 
-time per request.
+computational complexity per request.
 
-Selecting the minimum-cost route from the evaluated set requires
+Selecting the minimum-cost route requires
 
 \begin{equation}
     O
@@ -3434,7 +3218,7 @@ Selecting the minimum-cost route from the evaluated set requires
 
 additional comparisons.
 
-Since
+Because
 
 \begin{equation}
     K_{\mathrm{TF}}
@@ -3442,7 +3226,7 @@ Since
     K_{\max},
 \end{equation}
 
-the total route-selection complexity per request is bounded by
+the overall route-selection complexity is bounded by
 
 \begin{equation}
     O
@@ -3451,13 +3235,14 @@ the total route-selection complexity per request is bounded by
     \right).
 \end{equation}
 
+
 \subsection{Route-Repair Complexity}
 
-When no directly feasible route exists, the algorithm examines the repairable candidate set.
+When no directly feasible route is available, the algorithm evaluates the repairable candidate-route set.
 
-For each candidate route, the controller identifies critical e-links and calculates repair delay and repair cost.
+For each candidate route, the controller identifies critical artificial e-links and estimates the corresponding repair delay and regeneration cost.
 
-This requires at most
+Since each route contains at most $H_{\max}$ artificial e-links, the repair evaluation requires
 
 \begin{equation}
     O
@@ -3466,9 +3251,9 @@ This requires at most
     \right)
 \end{equation}
 
-operations per route.
+computational complexity per candidate route.
 
-Therefore, the repair-evaluation complexity per request is
+Therefore, the total repair-evaluation complexity per request is
 
 \begin{equation}
     O
@@ -3477,21 +3262,24 @@ Therefore, the repair-evaluation complexity per request is
     \right).
 \end{equation}
 
-This step is executed only when the directly feasible route set is empty.
+This repair procedure is activated only when the directly feasible route set is empty, and therefore does not introduce additional overhead during normal routing operation.
+
 
 \subsection{Regeneration-Priority Complexity}
 
-The proactive regeneration module evaluates every critical artificial e-link.
+The proactive regeneration module evaluates all currently critical artificial e-links.
 
 Let
 
 \begin{equation}
     m_{\mathrm{crit}}(t)
     =
-    |\mathcal{E}_{\mathrm{crit}}(t)|.
+    |\mathcal{E}_{\mathrm{crit}}(t)|
 \end{equation}
 
-Calculating the regeneration-priority and utility scores requires constant time per critical e-link. Therefore, score calculation requires
+denote the number of critical e-links at time $t$.
+
+The calculation of regeneration-priority and utility scores requires constant computation per critical e-link. Therefore, the scoring complexity is
 
 \begin{equation}
     O
@@ -3500,7 +3288,7 @@ Calculating the regeneration-priority and utility scores requires constant time 
     \right).
 \end{equation}
 
-Selecting the highest-priority $R_{\max}$ links can be performed by sorting all candidates, which requires
+Selecting the highest-priority $R_{\max}$ regeneration candidates through complete sorting requires
 
 \begin{equation}
     O
@@ -3511,7 +3299,7 @@ Selecting the highest-priority $R_{\max}$ links can be performed by sorting all 
     \right).
 \end{equation}
 
-Alternatively, a bounded priority queue of size $R_{\max}$ reduces this to
+Alternatively, maintaining a bounded priority queue with maximum size $R_{\max}$ reduces the selection complexity to
 
 \begin{equation}
     O
@@ -3527,16 +3315,16 @@ Since
 \begin{equation}
     R_{\max}
     \ll
-    m_{\mathrm{crit}}(t)
+    m_{\mathrm{crit}}(t),
 \end{equation}
 
-in the intended implementation, the bounded-priority-queue method is preferred.
+the bounded-priority-queue implementation is preferred for large-scale quantum networks.
 
 \subsection{Overlay-Maintenance Complexity}
 
-The retain, regenerate, replace, and discard decisions are evaluated over the stored artificial e-link set.
+The retain, regenerate, replace, and discard decisions are evaluated over the currently stored artificial e-link set.
 
-Basic maintenance-state evaluation therefore requires
+Therefore, the basic maintenance-state evaluation requires
 
 \begin{equation}
     O
@@ -3545,13 +3333,13 @@ Basic maintenance-state evaluation therefore requires
     \right).
 \end{equation}
 
-If replacement candidates are ranked using a candidate set of size
+If replacement candidates are selected from a bounded candidate set of size
 
 \begin{equation}
     m_{\mathrm{new}}(t),
 \end{equation}
 
-their ranking complexity is
+the ranking complexity becomes
 
 \begin{equation}
     O
@@ -3562,45 +3350,52 @@ their ranking complexity is
     \right).
 \end{equation}
 
-To maintain scalability, the proposed implementation limits replacement evaluation to a bounded candidate set rather than considering all possible ESP pairs.
+In the proposed implementation, replacement evaluation is restricted to a bounded candidate set instead of considering all possible ESP pairs. This limitation preserves the scalability of the compact-overlay architecture.
+
 
 \subsection{Total Per-Slot Complexity}
 
-Combining the principal operations, the total computational complexity in time slot $t$ is
+Combining temporal-state monitoring, candidate construction, feasibility filtering, route selection, and regeneration operations, the overall computational complexity in time slot $t$ is
 
 \begin{equation}
     O
     \left(
     m_{\mathrm{A}}(t)
     +
-    D_tK_{\max}
+    D_t
+    K_{\max}
     m_{\mathrm{U}}(t)
     \log n
     +
-    D_tK_{\max}H_{\max}
+    D_t
+    K_{\max}
+    H_{\max}
     +
     m_{\mathrm{crit}}(t)
     \log R_{\max}
     \right).
 \end{equation}
 
-When candidate routes are obtained directly from precomputed compact-routing structures rather than by running a complete shortest-path search for every request, the route-construction term is reduced.
+When candidate routes are generated directly from pre-established compact-routing structures rather than performing a complete graph search for every request, the route-construction component is reduced.
 
-In that case, the dominant per-slot complexity becomes
+In this case, the dominant computational complexity becomes
 
 \begin{equation}
     O
     \left(
     m_{\mathrm{A}}(t)
     +
-    D_tK_{\max}H_{\max}
+    D_t
+    K_{\max}
+    H_{\max}
     +
     m_{\mathrm{crit}}(t)
     \log R_{\max}
     \right).
 \end{equation}
 
-Because $K_{\max}$ and $H_{\max}$ are bounded design parameters, the request-processing complexity grows approximately linearly with the number of active requests.
+Since $K_{\max}$ and $H_{\max}$ are bounded design parameters, the request-processing complexity increases approximately linearly with the number of active entanglement requests.
+
 
 \subsection{Space Complexity}
 
@@ -3615,9 +3410,9 @@ The artificial-overlay graph requires
     \right)
 \end{equation}
 
-storage.
+storage space.
 
-Temporal-state records require
+The temporal-state information maintained for each artificial e-link requires additional
 
 \begin{equation}
     O
@@ -3626,20 +3421,20 @@ Temporal-state records require
     \right)
 \end{equation}
 
-additional storage.
+storage.
 
-The candidate routes for all active requests require at most
+The temporary storage required for candidate routes of all active requests is bounded by
 
 \begin{equation}
     O
     \left(
-    D_tK_{\max}H_{\max}
-    \right)
+    D_t
+    K_{\max}
+    H_{\max}
+    \right).
 \end{equation}
 
-temporary storage.
-
-Therefore, the total space complexity is
+Therefore, the overall space complexity is
 
 \begin{equation}
     O
@@ -3648,43 +3443,47 @@ Therefore, the total space complexity is
     +
     m_{\mathrm{A}}(t)
     +
-    D_tK_{\max}H_{\max}
+    D_t
+    K_{\max}
+    H_{\max}
     \right).
 \end{equation}
 
-The compact-routing-table constraint prevents the routing-state requirement at an individual ESP from growing to $O(n)$ under the intended overlay design.
-
-Instead, the target per-ESP routing-state complexity remains
+The compact-routing-table constraint prevents each ESP from maintaining complete global routing information. Instead of requiring $O(n)$ routing state, the proposed architecture maintains the target per-ESP routing-state complexity of
 
 \begin{equation}
     O
     \left(
-    \sqrt{n}\log n
+    \sqrt{n}
+    \log n
     \right).
 \end{equation}
 
-The proposed algorithm therefore trades global optimality for bounded candidate processing, compact routing state, and scalable temporal-state evaluation.
+Therefore, the proposed algorithm sacrifices global optimality in exchange for bounded candidate evaluation, compact routing-state requirements, and scalable temporal-state processing.
+
+
 \section{Chapter Summary}
-This chapter presented the proposed temporal-state-aware compact routing and overlay-maintenance method for quantum-native entanglement networks.
 
-The method was designed to preserve the compact-routing structure while incorporating the time-varying condition of stored artificial e-links into routing decisions. The main design objectives included temporal reliability, fidelity preservation, compact routing-state maintenance, controlled regeneration overhead, reduced request rejection, and scalable decision making.
+This chapter presented the proposed temporal-state-aware compact routing and overlay-maintenance framework for quantum-native entanglement networks.
 
-The proposed framework combines two interacting processes: reactive routing and proactive overlay maintenance. Reactive routing processes each entanglement request by constructing a bounded set of compact candidate routes, predicting their temporal condition, filtering infeasible candidates, and selecting the minimum-cost temporally feasible route. Proactive overlay maintenance monitors stored e-links and selectively retains, regenerates, replaces, or discards them according to temporal risk, structural importance, demand relevance, and resource cost.
+The proposed method extends compact quantum routing by incorporating the temporal evolution of stored artificial e-links into routing decisions. The main objectives were to improve temporal reliability, preserve entanglement fidelity, maintain compact routing-state requirements, control regeneration overhead, reduce request rejection, and achieve scalable decision making.
 
-A temporal e-link monitoring mechanism was defined to update age, effective fidelity, predicted consumption fidelity, remaining coherence budget, utilization history, and temporal-state classification. Based on these quantities, every artificial e-link is classified as safe, warning, critical, or expired.
+The proposed framework consists of two interacting processes: reactive routing and proactive overlay maintenance. Reactive routing handles incoming entanglement requests by constructing a bounded candidate-route set, evaluating temporal feasibility, and selecting the minimum-cost feasible route. Proactive maintenance continuously evaluates stored artificial e-links and determines whether they should be retained, regenerated, replaced, or discarded.
 
-Candidate-route construction was restricted to the information available through local e-neighbors, anchors, and tracked long-range links. The number of candidate routes and maximum overlay-hop count were explicitly bounded to preserve scalability.
+A temporal-state monitoring mechanism was introduced to update e-link age, effective fidelity, predicted consumption fidelity, remaining coherence budget, utilization history, and temporal classification. Based on these factors, artificial e-links are classified into safe, warning, critical, and expired states.
 
-The temporal-feasibility filtering process evaluated each candidate route according to e-link availability, predicted link-level fidelity, remaining coherence budget, predicted end-to-end fidelity, route-completion delay, and stored e-bit availability. This process separated candidate routes into directly feasible, repairable, and infeasible sets.
+The candidate-route construction mechanism preserves compact routing by limiting route discovery to local e-neighbors, anchor information, and tracked long-range links. The number of candidate routes and maximum route length are explicitly bounded to avoid unrestricted path exploration.
 
-A time-dependent route-selection method was then formulated. The complete route cost combines temporal e-link cost, swapping risk, predicted delay, and optional route-success probability. Tie-breaking rules were defined using predicted end-to-end fidelity, minimum coherence budget, completion delay, and overlay-hop count.
+The temporal-feasibility filtering module evaluates candidate routes using link availability, predicted fidelity, coherence budget, end-to-end fidelity, completion delay, and e-bit resource availability. This process separates directly feasible routes from repairable and infeasible routes.
 
-The proactive-regeneration mechanism assigns priority to critical e-links according to coherence-budget risk, fidelity degradation, structural importance, utilization history, predicted demand, and regeneration cost. Regeneration actions are executed subject to memory, generation-attempt, delay, and per-slot action limits.
+A time-dependent route-selection metric was developed by combining temporal e-link quality, fidelity degradation, age, coherence risk, regeneration cost, swapping reliability, and route delay. Additional reliability-aware extensions were introduced using predicted route-success probability.
 
-The overlay-maintenance strategy determines whether each e-link should be retained, regenerated, replaced, or discarded. It also preserves compact-overlay connectivity and routing-table-size constraints while preventing unnecessary reconfiguration through utility thresholds and minimum holding intervals.
+The proactive regeneration mechanism prioritizes critical artificial e-links according to temporal risk, structural importance, utilization history, predicted demand, and regeneration overhead. Regeneration decisions are constrained by quantum-memory capacity, physical-generation capability, and per-slot regeneration limits.
 
-The complete proposed algorithm integrates all routing and maintenance stages in a discrete-time operational procedure. The method is a model-based heuristic and does not assume that the globally optimal joint routing and overlay-maintenance solution can be computed at every time slot.
+The overlay-maintenance strategy provides a controlled mechanism for preserving useful links, refreshing degraded links, replacing inefficient links, and removing obsolete links while maintaining compact routing constraints.
 
-Finally, the computational complexity analysis showed that the principal operations depend on the number of stored artificial e-links, active requests, bounded candidate routes, maximum route length, and critical-link count. With bounded candidate-set and route-length parameters, the request-processing cost remains approximately linear in the number of active requests.
+The complete routing procedure was summarized as a model-based heuristic algorithm. It does not attempt to solve the globally optimal joint routing and maintenance problem at every time slot. Instead, it achieves practical scalability through bounded candidate generation, temporal filtering, and limited regeneration operations.
 
-The next chapter presents the simulation environment, implementation methodology, parameter configuration, benchmark algorithms, evaluation metrics, and experimental scenarios used to evaluate the proposed method.
+Finally, the computational complexity analysis demonstrated that the proposed framework depends mainly on the number of stored artificial e-links, active requests, bounded candidate routes, maximum route length, and critical-link population. With fixed candidate and route-length limits, the request-processing complexity scales approximately linearly with the number of active requests.
+
+The next chapter presents the simulation environment, implementation details, parameter configuration, baseline algorithms, evaluation metrics, and experimental scenarios used to validate the proposed method.
