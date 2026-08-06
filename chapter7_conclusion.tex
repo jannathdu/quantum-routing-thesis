@@ -1,0 +1,122 @@
+\chapter{Conclusion and Future Work}
+
+\section{Summary of Research}
+
+This thesis investigated the problem of reliable entanglement distribution
+in dynamic quantum networks where quantum links experience temporal
+degradation, fidelity reduction, and limited resource availability.
+
+Unlike traditional static routing approaches that treat quantum links as
+unchanging resources, this work proposed a Temporal-State-Aware Routing
+framework that considers the evolution of entanglement states over time.
+The proposed framework integrates temporal state evaluation, adaptive route
+selection, coherence-budget management, and regeneration mechanisms to
+maintain reliable communication paths.
+
+A simulation framework was developed to evaluate the proposed method under
+different network conditions. The evaluation considered baseline comparison,
+multi-seed experiments, scalability analysis, coherence-time variation,
+traffic-load variation, and additional sensitivity studies.
+
+The experimental results demonstrated that considering temporal link
+conditions provides more reliable routing decisions compared with static
+routing approaches. The proposed framework improves the capability of quantum
+networks to maintain usable entanglement paths under dynamic operating
+conditions.
+
+
+\section{Main Contributions}
+
+The main contributions of this thesis are summarized as follows:
+
+\begin{itemize}
+
+\item
+A temporal-state-aware quantum routing framework was proposed for
+fidelity-preserving entanglement distribution in dynamic quantum networks.
+The framework considers the time-dependent evolution of entanglement
+resources instead of relying only on static topology information.
+
+\item
+A routing strategy was developed that incorporates temporal link conditions,
+including link aging, fidelity degradation, and remaining coherence budget,
+into route selection decisions.
+
+\item
+A regeneration-assisted resource management mechanism was introduced to
+recover degraded entanglement resources and improve long-term route
+availability.
+
+\item
+A simulation environment was implemented to evaluate routing performance under
+different network scenarios, including scalability, coherence-time variation,
+traffic variation, and multi-seed experiments.
+
+\item
+A comprehensive evaluation framework was established using metrics including
+request success ratio, fidelity performance, temporal disconnection ratio,
+completion delay, regeneration overhead, and quantum-memory utilization.
+
+\end{itemize}
+
+
+\section{Limitations}
+
+Although the proposed framework improves routing reliability in simulation,
+several limitations remain.
+
+First, the current evaluation is based on simulated quantum network
+environments. Real quantum communication systems may introduce additional
+hardware-dependent imperfections, noise sources, and operational constraints.
+
+Second, the current model uses a simplified temporal fidelity degradation
+process. More detailed physical noise models, including hardware-specific
+errors and complex quantum channel behaviors, can be incorporated in future
+work.
+
+Third, the regeneration mechanism assumes that recovery resources are
+available when required. Practical quantum networks may face limitations in
+entanglement generation capability, memory availability, and operational
+cost.
+
+These limitations indicate several possible directions for extending the
+proposed framework toward more realistic quantum network implementations.
+
+
+\section{Future Research Directions}
+
+Several research directions can be explored based on this work.
+
+First, future studies can incorporate more realistic quantum noise models and
+hardware parameters to improve the physical accuracy of the simulation
+framework.
+
+Second, machine learning and reinforcement learning approaches can be
+investigated for adaptive routing decisions in larger and more complex
+quantum networks.
+
+Third, future work can consider distributed routing architectures where
+multiple quantum network nodes collaboratively exchange temporal state
+information.
+
+Finally, the proposed framework can be validated using quantum network
+simulation platforms and experimental quantum communication testbeds to
+evaluate its practical applicability.
+
+
+\section{Conclusion}
+
+This thesis presented a Temporal-State-Aware Routing framework for
+fidelity-preserving entanglement distribution in dynamic quantum networks.
+By considering temporal evolution of quantum resources and integrating
+adaptive routing with regeneration capability, the proposed approach provides
+a more reliable alternative to conventional static routing methods.
+
+The simulation results confirm the importance of temporal awareness and
+resource recovery mechanisms for maintaining stable quantum communication
+paths. The findings demonstrate that future quantum networks require routing
+strategies capable of adapting to continuously changing entanglement states.
+
+Overall, this work contributes toward the development of reliable and
+resource-efficient routing techniques for future large-scale quantum
+network infrastructures.

@@ -1393,123 +1393,64 @@ where $D_{\max}$ represents the maximum acceptable entanglement-establishment de
 The fifth requirement ensures that sufficient quantum-memory resources are available along the route:
 
 \begin{equation}
-    \sum_{
-    j:
-    e_{ij}^{\mathrm{A}}
-    \in
-    R_{s,d}(t)
-    }
+    \sum_{\substack{j:\,
+    e_{ij}^{\mathrm{A}}\in R_{s,d}(t)}}
     n_{ij}^{\mathrm{ebit}}(t)
-    \leq
-    M_i,
+    \leq M_i,
     \qquad
-    \forall v_i
-    \in
-    R_{s,d}(t).
+    \forall\, v_i\in R_{s,d}(t).
 \end{equation}
 
 A binary temporal route-feasibility indicator is defined as
 
 \begin{equation}
-    \chi_{s,d}
-    \left(
-    R_{s,d}(t)
-    \right)
-    \in
-    \{0,1\}.
+    \chi_{s,d}\!\left(R_{s,d}(t)\right)
+    \in \{0,1\}.
 \end{equation}
 
-The indicator takes value one only when all temporal routing requirements are satisfied:
+For compactness, define the active-edge set of the selected route as
+$\mathcal{E}_{s,d}(t)
+=E_{\mathrm{A}}\!\left(R_{s,d}(t)\right)$.
+The indicator takes value one only when all temporal routing
+requirements are satisfied:
 
 \begin{equation}
 \begin{aligned}
-    \chi_{s,d}
-    \left(
-    R_{s,d}(t)
-    \right)
-    =
-    &
-    \prod_{
-    (i,j)
-    \in
-    E_{\mathrm{A}}(R_{s,d}(t))
-    }
-    x_{ij}(t)
+\chi_{s,d}(R_{s,d}(t))
+&=
+\prod_{(i,j)\in\mathcal{E}_{s,d}(t)}
+x_{ij}(t)
 \\
-    &
-    \times
-    \prod_{
-    (i,j)
-    \in
-    E_{\mathrm{A}}(R_{s,d}(t))
-    }
-    \mathbf{1}
-    \left[
-    B_{ij}(t)
-    \geq
-    \delta_{\mathrm{safe}}
-    \right]
+&\times
+\prod_{(i,j)\in\mathcal{E}_{s,d}(t)}
+\mathbf{1}
+\left(
+B_{ij}(t)\geq\delta_{\mathrm{safe}}
+\right)
 \\
-    &
-    \times
-    \prod_{
-    (i,j)
-    \in
-    E_{\mathrm{A}}(R_{s,d}(t))
-    }
-    \mathbf{1}
-    \left[
-    \widehat{F}_{ij}^{\mathrm{cons}}(t)
-    \geq
-    F_{\min}^{\mathrm{link}}
-    \right]
+&\times
+\prod_{(i,j)\in\mathcal{E}_{s,d}(t)}
+\mathbf{1}
+\left(
+\widehat{F}_{ij}^{\mathrm{cons}}(t)
+\geq F_{\min}^{\mathrm{link}}
+\right)
 \\
-    &
-    \times
-    \mathbf{1}
-    \left[
-    \widehat{F}_{s,d}^{\mathrm{end}}
-    \left(
-    t+
-    \widehat{D}_{s,d}^{\mathrm{route}}(t)
-    \right)
-    \geq
-    F_{\min}^{\mathrm{end}}
-    \right]
+&\times
+\mathbf{1}
+\left(
+\widehat{F}_{s,d}^{\mathrm{end}}
+(t+\widehat{D}_{s,d}^{\mathrm{route}}(t))
+\geq F_{\min}^{\mathrm{end}}
+\right)
 \\
-    &
-    \times
-    \mathbf{1}
-    \left[
-    \widehat{D}_{s,d}^{\mathrm{route}}(t)
-    \leq
-    D_{\max}
-    \right].
+&\times
+\mathbf{1}
+\left(
+\widehat{D}_{s,d}^{\mathrm{route}}(t)
+\leq D_{\max}
+\right).
 \end{aligned}
-\end{equation}
-
-Here, $\mathbf{1}[\cdot]$ denotes the indicator function.
-
-A route is considered temporally feasible if
-
-\begin{equation}
-    \chi_{s,d}
-    \left(
-    R_{s,d}(t)
-    \right)
-    =
-    1.
-\end{equation}
-
-Otherwise,
-
-\begin{equation}
-    \chi_{s,d}
-    \left(
-    R_{s,d}(t)
-    \right)
-    =
-    0,
 \end{equation}
 
 and the route must be rejected, regenerated, repaired, or replaced by an alternative temporally feasible path.

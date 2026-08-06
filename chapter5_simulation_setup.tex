@@ -24,17 +24,14 @@ The experimental methodology contains the following components:
 The complete experimental workflow is organized as
 
 \begin{equation}
-    \mathrm{Topology\ Generation}
-    \rightarrow
-    \mathrm{Overlay\ Construction}
-    \rightarrow
-    \mathrm{Traffic\ Generation}
-    \rightarrow
-    \mathrm{Routing}
-    \rightarrow
-    \mathrm{Regeneration}
-    \rightarrow
-    \mathrm{Performance\ Evaluation}.
+\begin{aligned}
+\mathrm{Topology\ Generation}
+&\rightarrow \mathrm{Overlay\ Construction}
+\rightarrow \mathrm{Traffic\ Generation}\\
+&\rightarrow \mathrm{Routing}
+\rightarrow \mathrm{Regeneration}
+\rightarrow \mathrm{Performance\ Evaluation}.
+\end{aligned}
 \end{equation}
 
 Figure~\ref{fig:simulation_workflow} illustrates the overall simulation workflow used in this thesis.
@@ -1439,35 +1436,47 @@ It evaluates whether predicting additional waiting and swapping delay improves r
     \centering
     \caption{Comparison of the proposed method and benchmark routing strategies.}
     \label{tab:benchmark_methods}
-    \begin{tabular}{p{3.4cm} c c c c}
-        \toprule
-        \textbf{Method} &
-        \textbf{Age} &
-        \textbf{Fidelity} &
-        \textbf{Coherence budget} &
-        \textbf{Regeneration} \\
-        \midrule
-        Shortest-Hop &
-        No & No & No & No \\
-        Static Entangling Cost &
-        No & Optional static & No & No \\
-        Fidelity-Only &
-        No & Yes & No & No \\
-        Age-Only &
-        Yes & No & No & No \\
-        Current-Fidelity-Aware &
-        Indirectly & Current only & No & No \\
-        Reactive Regeneration &
-        Optional & Optional & No & Reactive \\
-        Proposed without Regeneration &
-        Yes & Predicted & Yes & No \\
-        Proposed without Budget Filtering &
-        Yes & Predicted & No & Yes \\
-        Proposed without Prediction &
-        Yes & Current only & Yes & Yes \\
-        Proposed Full Method &
-        Yes & Predicted & Yes & Proactive and reactive \\
-        \bottomrule
+    \begin{tabular}{p{3.0cm} p{1.2cm} p{2.2cm} p{2.2cm} p{2.8cm}}
+    \toprule
+    \textbf{Method} &
+    \textbf{Age} &
+    \textbf{Fidelity} &
+    \textbf{Coherence budget} &
+    \textbf{Regeneration} \\
+    \midrule
+
+    Shortest-Hop &
+    No & No & No & No \\
+
+    Static Entangling Cost &
+    No & Optional static & No & No \\
+
+    Fidelity-Only &
+    No & Yes & No & No \\
+
+    Age-Only &
+    Yes & No & No & No \\
+
+    Current-Fidelity-Aware &
+    Indirectly & Current only & No & No \\
+
+    Reactive Regeneration &
+    Optional & Optional & No & Reactive \\
+
+    Proposed without Regeneration &
+    Yes & Predicted & Yes & No \\
+
+    Proposed without Budget Filtering &
+    Yes & Predicted & No & Yes \\
+
+    Proposed without Prediction &
+    Yes & Current only & Yes & Yes \\
+
+    Proposed Full Method &
+    Yes & Predicted & Yes &
+    Proactive and reactive \\
+
+    \bottomrule
     \end{tabular}
 \end{table}
 
@@ -2749,6 +2758,15 @@ Figure~\ref{fig:implementation_pipeline} summarizes the implementation pipeline.
 \end{figure}
 
 This modular implementation procedure supports reproducible experiments, systematic debugging, baseline comparison, ablation analysis, and later extension to more detailed quantum-network simulators.
+
+\subsection{Large-Scale Scalability Experiment Configuration}
+
+To evaluate scalability, the proposed temporal-state-aware routing framework was tested under different network sizes. The number of quantum network nodes was varied from small to large-scale configurations, including 6, 20, 40, 60, and 100 nodes.
+
+For each network size, multiple independent random seeds were executed to reduce the influence of topology randomness. Each experiment was simulated for 1000 discrete time slots, during which entanglement links continuously evolved according to the temporal-state model.
+
+The scalability evaluation considered request acceptance ratio, failed requests, regeneration operations, and average routing hop count. These metrics were used to analyze the capability of the proposed method to maintain reliable entanglement distribution performance as network complexity increases.
+
 \section{Chapter Summary}
 This chapter presented the simulation methodology and experimental setup for evaluating the proposed temporal-state-aware compact routing method.
 
