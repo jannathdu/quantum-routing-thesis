@@ -22,15 +22,16 @@ The experimental methodology contains the following components:
 \end{itemize}
 
 The complete experimental workflow is organized as
-
 \begin{equation}
 \begin{aligned}
 \mathrm{Topology\ Generation}
 &\rightarrow \mathrm{Overlay\ Construction}
-\rightarrow \mathrm{Traffic\ Generation}\\
+\rightarrow \mathrm{Traffic\ Generation}
+\\
 &\rightarrow \mathrm{Routing}
 \rightarrow \mathrm{Regeneration}
-\rightarrow \mathrm{Performance\ Evaluation}.
+\\
+&\rightarrow \mathrm{Performance\ Evaluation}.
 \end{aligned}
 \end{equation}
 
@@ -97,7 +98,7 @@ The following sections describe the simulation environment, topology generation,
 \section{Simulation Environment}
 The proposed routing framework is implemented as a discrete-event and time-slotted simulation in Python. The simulator models physical quantum links, artificial e-links, quantum-memory occupation, entanglement generation, decoherence, swapping, routing requests, and overlay-maintenance actions.
 
-The implementation uses Python because it provides mature graph-processing, numerical-computation, and data-analysis libraries. The principal software components are:
+Python is used for its mature libraries for graph processing, numerical computation, and data analysis. The principal software components are:
 
 \begin{itemize}
     \item Python for the simulation engine;
@@ -119,7 +120,7 @@ The physical quantum network is represented as a graph
     \right),
 \end{equation}
 
-while the artificial entanglement overlay is represented as a time-dependent graph
+while the artificial overlay is represented by the time-dependent graph
 
 \begin{equation}
     G_{\mathrm{A}}(t)
@@ -270,8 +271,7 @@ Using multiple topology types prevents the evaluation from depending on a single
 
 \subsection{Random Connected Topology}
 
-In the random topology, ESP positions are generated inside a two-dimensional square region.
-
+For the random topology, ESP positions are generated within a square region.
 The coordinate of ESP $v_i$ is
 
 \begin{equation}
@@ -427,7 +427,7 @@ Each physical link $(i,j)\in E_{\mathrm{P}}$ is assigned the parameter set
     \right],
 \end{equation}
 
-where $L_{ij}$ is the physical-link distance, $p_{ij}^{\mathrm{gen}}$ is the elementary-entanglement generation probability, $F_{ij}^{0}$ is the initial fidelity, $T_{2,ij}$ is the coherence time, $q_{ij}$ is the swapping-success probability, $D_{ij}^{\mathrm{gen}}$ is the expected generation delay, and $S_{ij}$ is the number of parallel generation modes.
+Here, $L_{ij}$ is the physical-link distance, $p_{ij}^{\mathrm{gen}}$ is the elementary-entanglement generation probability, $F_{ij}^{0}$ is the initial fidelity, and $T_{2,ij}$ is the coherence time. Furthermore, $q_{ij}$ is the swapping-success probability, $D_{ij}^{\mathrm{gen}}$ is the expected generation delay, and $S_{ij}$ is the number of parallel generation modes.
 
 The parameter values used in the simulations are treated as configurable experimental assumptions rather than universal hardware constants. Each important parameter is varied through sensitivity experiments.
 
@@ -1406,7 +1406,7 @@ This ablation variant uses temporal monitoring, coherence-budget filtering, and 
 
 It isolates the contribution of proactive and reactive regeneration.
 
-\subsection{Proposed Method without Coherence-Budget Filtering}
+\subsection{Method without Coherence-Budget Filtering}
 
 This ablation variant removes the coherence-budget feasibility condition.
 
@@ -1418,9 +1418,9 @@ A route may be selected when its predicted fidelity is acceptable even if
     \delta_{\mathrm{safe}}.
 \end{equation}
 
-This comparison measures the specific contribution of the remaining coherence-budget model.
+This comparison isolates the contribution of the remaining coherence budget.
 
-\subsection{Proposed Method without Consumption-Time Prediction}
+\subsection{Method without Consumption-Time Prediction}
 
 This variant uses current e-link fidelity instead of predicted consumption-time fidelity:
 
@@ -1458,10 +1458,10 @@ It evaluates whether predicting additional waiting and swapping delay improves r
     Yes & No & No & No \\
 
     Current-Fidelity-Aware &
-    Indirectly & Current only & No & No \\
+    Via $F$ & Current only & No & No \\
 
     Reactive Regeneration &
-    Optional & Optional & No & Reactive \\
+    Opt. & Opt. & No & Reactive \\
 
     Proposed without Regeneration &
     Yes & Predicted & Yes & No \\
@@ -1480,7 +1480,7 @@ It evaluates whether predicting additional waiting and swapping delay improves r
     \end{tabular}
 \end{table}
 
-For fairness, every method is constrained by the same maximum candidate-route count
+For fairness, all methods use the same candidate-route limit
 
 \begin{equation}
     K_{\max},
@@ -1498,7 +1498,7 @@ The benchmark set supports both direct performance comparison and ablation analy
 \section{Evaluation Metrics}
 The performance of the proposed method is evaluated using routing reliability, fidelity, delay, resource-consumption, regeneration, and scalability metrics.
 
-No single metric is sufficient because a routing method may improve fidelity while increasing delay, memory usage, or regeneration overhead. Therefore, the evaluation considers multiple complementary measures.
+A routing method may improve fidelity while increasing delay, memory use, or regeneration overhead. Therefore, the evaluation considers multiple complementary measures.
 
 \subsection{Request Success Ratio}
 
@@ -2161,7 +2161,7 @@ represents the regeneration-disabled ablation.
 
 This scenario evaluates whether additional regeneration always improves performance or eventually introduces excessive resource and delay overhead.
 
-\subsection{Scenario 8: Partial-Anchor and Full-Anchor Comparison}
+\subsection{Scenario 8: Anchor-Scheme Comparison}
 
 The eighth scenario compares the Partial-Anchor and Full-Anchor overlay structures.
 
@@ -2776,9 +2776,9 @@ Multiple physical network structures were considered, including random connected
 
 The physical and quantum-link models included distance-dependent generation probability, initial fidelity, coherence time, swapping-success probability, coordination delay, and generation delay. These values were explicitly treated as configurable simulation assumptions and will be refined using verified literature sources.
 
-The artificial overlay was configured using Partial-Anchor and Full-Anchor structures. The overlay initialization included anchor or tracked-link selection, physical-path identification, memory verification, initial e-link generation, age assignment, and compact routing-table construction.
+Both Partial-Anchor and Full-Anchor structures were evaluated. The overlay initialization included anchor or tracked-link selection, physical-path identification, memory verification, initial e-link generation, age assignment, and compact routing-table construction.
 
-A traffic model was defined using configurable request-arrival rates, source--destination selection, service classes, fidelity requirements, pair-demand sizes, and completion deadlines. Uniform and hotspot traffic patterns were included.
+The traffic model uses configurable arrival rates, source--destination pairs, service classes, fidelity requirements, pair demands, and deadlines. Uniform and hotspot traffic patterns were included.
 
 The proposed method was compared with shortest-hop, static entangling-cost, fidelity-only, age-only, current-fidelity-aware, reactive-regeneration, and multiple ablation variants. All methods use matched topologies, traffic sequences, random seeds, generation outcomes, and resource constraints.
 

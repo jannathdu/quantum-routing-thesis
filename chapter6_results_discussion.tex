@@ -44,10 +44,9 @@ updated according to their age, effective fidelity, remaining coherence
 budget, and temporal state. A maximum of one critical or expired artificial
 link can be regenerated in each time slot.
 
-The current minimum usable fidelity threshold is set to \(0.70\). The
-temporal-state-aware routing method assigns a dynamic cost to each usable
-artificial link based on its effective fidelity, entanglement age, and
-remaining coherence budget.
+The minimum usable fidelity is \(0.70\). The proposed method assigns each
+usable artificial link a dynamic cost based on fidelity, age, and remaining
+coherence budget.
 
 \subsection{Preliminary Request-Level Results}
 
@@ -105,8 +104,8 @@ Figure~\ref{fig:preliminary-route-availability-slots}.
         \toprule
         Method & Available slots & Availability ratio \\
         \midrule
-        Proposed temporal-state-aware method & 9/10 & \(90\%\) \\
-        Static shortest-path baseline & 6/10 & \(60\%\) \\
+        Proposed method & 9/10 & \(90\%\) \\
+        Shortest-path baseline & 6/10 & \(60\%\) \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -208,8 +207,8 @@ implemented. Finally, the experiments will be repeated on larger network
 topologies and reported using sample means, standard deviations, and
 confidence intervals.
 
-These extensions represent the next stage of validation required for
-strengthening the experimental evidence of the proposed method.
+These extensions form the next validation stage and will strengthen the
+experimental evidence for the proposed method.
 
 Before drawing broader conclusions from the comparative results, the
 current simulation outputs are further examined through implementation
@@ -275,7 +274,7 @@ The following inputs are held constant:
     \item random seeds.
 \end{itemize}
 
-This matched-input procedure ensures that observed differences are caused by routing and maintenance decisions rather than by different random realizations.
+Matched inputs ensure that differences arise from routing and maintenance decisions, not from random variations.
 
 \subsection{Output Consistency Checks}
 The output consistency verification evaluates whether the simulator produces
@@ -327,11 +326,10 @@ The request-count consistency condition is
     N_{\mathrm{pending}},
 \end{equation}
 
-where \(N_{\mathrm{total}}\) represents the total number of generated
-requests, \(N_{\mathrm{success}}\) represents successfully completed
-requests, \(N_{\mathrm{reject}}\) represents rejected requests, and
-\(N_{\mathrm{pending}}\) represents requests that remain unresolved at the
-end of the simulation horizon.
+Here, \(N_{\mathrm{total}}\) is the total request count,
+\(N_{\mathrm{success}}\) is the completed request count,
+\(N_{\mathrm{reject}}\) is the rejected request count, and
+\(N_{\mathrm{pending}}\) is the unresolved count at the end of the simulation.
 
 \subsection{Statistical Quality Control}
 
@@ -366,16 +364,12 @@ and reproducibility of the experimental evaluation.
 This section compares the proposed temporal-state-aware routing method
 with the benchmark routing strategies defined in Chapter 5.
 
-The comparison uses identical topology instances, request sequences,
-memory capacities, physical-link parameters, generation outcomes,
-swapping outcomes, and random seeds. Three routing strategies are
-considered in this experiment. The first is a static shortest-path
-baseline based only on hop-count optimization without temporal-state
-adaptation. The second is a fidelity-based baseline that prioritizes
-links with higher effective fidelity. The third is the proposed
-temporal-state-aware routing method, which jointly considers
-entanglement age, effective fidelity, and remaining coherence budget
-during route selection.
+All methods use the same topologies, requests, memory capacities, link
+parameters, generation and swapping outcomes, and random seeds. Three
+routing strategies are evaluated. The shortest-path baseline minimizes
+hop count without temporal adaptation. The fidelity baseline prioritizes
+links with higher effective fidelity. The proposed method jointly considers
+entanglement age, effective fidelity, and remaining coherence budget.
 
 The principal metrics considered in the current baseline experiment are:
 
@@ -438,14 +432,10 @@ requests. In addition, the average hop count increases to 9.8690,
 showing that the proposed method often selects longer but higher-quality
 routes.
 
-This behavior reflects the design objective of the proposed method.
-Rather than maximizing acceptance at all costs, the algorithm is more
-conservative and avoids temporally degraded or low-fidelity links.
-Consequently, it sacrifices acceptance ratio in order to preserve
-higher-quality end-to-end entanglement. From a quantum-networking
-perspective, this trade-off is meaningful because accepting a larger
-number of poor-quality routes may not be useful for fidelity-sensitive
-applications.
+This behavior reflects the method's design objective. The algorithm avoids
+temporally degraded or low-fidelity links instead of maximizing acceptance.
+It therefore trades acceptance ratio for higher-quality end-to-end
+entanglement, which benefits fidelity-sensitive applications.
 
 Figure~\ref{fig:baseline_success_ratio} presents the visual comparison
 used in the baseline experiment.
@@ -457,12 +447,10 @@ used in the baseline experiment.
     \label{fig:baseline_success_ratio}
 \end{figure}
 
-Overall, the baseline comparison demonstrates that the proposed
-temporal-state-aware routing method is more effective at preserving
-end-to-end fidelity, whereas the benchmark methods provide higher
-acceptance ratios and shorter routes. Therefore, the proposed approach
-is better suited to application scenarios where entanglement quality is
-more critical than raw request throughput.
+Overall, the proposed method preserves higher end-to-end fidelity, while
+the benchmarks achieve higher acceptance ratios and shorter routes.
+Thus, the proposed method is more suitable when entanglement quality is
+more important than request throughput.
 
 The discussion in this section focuses on four aspects:
 
@@ -551,7 +539,7 @@ Figure~\ref{fig:network_size_regeneration} shows how the regeneration count chan
 
 The scalability analysis focuses on how increasing network size affects routing reliability, route length, and maintenance effort.
 
-As the network becomes larger, the number of available source--destination pairs increases and the routing space becomes more complex. At the same time, a larger topology may provide more alternative paths and more artificial entanglement shortcuts. Therefore, the effect of network growth is not strictly monotonic in every metric.
+Larger networks contain more source--destination pairs and a more complex routing space. At the same time, a larger topology may provide more alternative paths and more artificial entanglement shortcuts. Therefore, the effect of network growth is not strictly monotonic in every metric.
 
 From Table~\ref{tab:network_size_results}, the acceptance ratio remains extremely high across all tested network sizes. It is equal to 1.0000 for network sizes 6, 20, and 60, and decreases only slightly to 0.9999 at size 40 and 0.9995 at size 100. This result indicates that the proposed routing method preserves a very strong feasibility level even when the network becomes significantly larger.
 
@@ -585,7 +573,7 @@ The current implementation records the following metrics:
 \end{itemize}
 
 
-Table~\ref{tab:coherence_time_results} summarizes the performance variation under different coherence-time conditions.
+Table~\ref{tab:coherence_time_results} summarizes performance across different coherence times.
 
 
 \begin{table}[htbp]
@@ -635,7 +623,7 @@ Figure~\ref{fig:coherence_fidelity} presents the average fidelity variation unde
 
 The results show that memory coherence time has a significant influence on quantum routing performance.
 
-When the coherence time is short, entanglement resources degrade rapidly, resulting in lower request acceptance probability. As the coherence time increases, more quantum links remain usable for routing, leading to improved communication reliability.
+Short coherence times cause rapid entanglement degradation and reduce request acceptance. As the coherence time increases, more quantum links remain usable for routing, leading to improved communication reliability.
 
 The acceptance ratio increases from 0.284 at coherence time 1 to 0.647 at coherence time 50. Similarly, the average end-to-end fidelity improves from 0.380 to 0.598, indicating that longer-lived quantum memories provide more stable entanglement resources.
 
@@ -747,10 +735,9 @@ under highly congested quantum-network conditions.
 This section examines how fidelity requirements influence the routing behavior
 of the proposed temporal-state-aware routing framework.
 
-The fidelity threshold represents the minimum acceptable end-to-end quality
-required for successful entanglement distribution. In general, a stricter
-fidelity requirement reduces the number of feasible candidate routes, because
-more degraded artificial e-links are excluded during route selection.
+The fidelity threshold defines the minimum end-to-end quality required for
+successful distribution. A stricter threshold reduces the feasible route set
+by excluding more degraded artificial e-links.
 
 The intended fidelity-threshold settings are
 
@@ -824,8 +811,8 @@ effect of quality-aware routing. In general, routes that preserve higher
 fidelity may require more selective path choice, additional waiting, or extra
 maintenance actions, which can influence the observed completion delay.
 
-Figure~\ref{fig:coherence_fidelity_result} presents the fidelity variation
-under different memory coherence-time conditions.
+Figure~\ref{fig:coherence_fidelity_result} shows fidelity across different
+memory coherence times.
 
 \begin{figure}[htbp]
     \centering
@@ -840,10 +827,9 @@ during routing. When quantum memories retain entangled states for a longer
 duration, the probability of selecting temporally usable and high-quality
 artificial e-links increases.
 
-Although these currently available results do not yet provide a direct
-three-level fidelity-threshold sweep, they still demonstrate that fidelity
-preservation is strongly coupled with temporal resource quality and storage
-conditions. This supports the design motivation of the proposed temporal-state-aware routing framework.
+Although these results do not provide a three-level threshold sweep, they show
+that fidelity preservation depends on temporal resource quality and storage
+conditions. This finding supports the proposed framework.
 
 A complete fidelity-threshold sensitivity experiment will be incorporated in a
 future simulator extension. That experiment will report explicit numerical
@@ -879,9 +865,8 @@ entanglement resources and increase the number of available routing options.
 However, excessive memory resources may also introduce additional management
 complexity and resource consumption.
 
-All routing methods are evaluated using matched physical topologies,
-artificial-overlay rules, traffic sequences, coherence-time settings,
-fidelity thresholds, and random seeds.
+All routing methods use the same topologies, overlay rules, traffic sequences,
+coherence times, fidelity thresholds, and random seeds.
 
 The intended evaluation metrics are:
 
@@ -894,8 +879,7 @@ The intended evaluation metrics are:
     \item regeneration overhead.
 \end{itemize}
 
-Table~\ref{tab:memory_capacity_results} provides the evaluation framework for
-different quantum-memory capacity configurations.
+Table~\ref{tab:memory_capacity_results} compares different memory capacities.
 
 \begin{table}[htbp]
     \centering
@@ -937,9 +921,9 @@ In the current simulator implementation, a complete memory-capacity sweep with
 validated numerical outputs is not yet available. Therefore, this section does
 not report quantitative conclusions for different memory-capacity levels.
 
-Future extensions of the simulator will incorporate explicit memory-capacity
-experiments together with success ratio, memory utilization, discarded e-link
-ratio, temporal disconnection ratio, and regeneration overhead measurements.
+Future simulator extensions will include explicit memory-capacity experiments.
+They will measure success ratio, memory utilization, discarded e-links,
+temporal disconnections, and regeneration overhead.
 
 The final conclusions will be drawn after the corresponding simulation results
 and statistical analysis are generated and verified.
@@ -1233,9 +1217,8 @@ route availability and increasing resource-maintenance overhead.
 
 \section{Computational Performance}
 
-The computational performance of the proposed Temporal-State-Aware Routing
-framework is discussed in terms of algorithmic overhead, scalability, and
-resource-management complexity.
+The proposed framework is evaluated in terms of computational overhead,
+scalability, and resource-management complexity.
 
 Compared with static shortest-path routing, the proposed framework introduces
 additional operations because it considers temporal link states, fidelity
@@ -1249,9 +1232,8 @@ Although these operations increase the complexity compared with static routing,
 they are necessary for maintaining fidelity-aware and temporally reliable
 communication paths.
 
-A detailed execution-time benchmark and computational complexity comparison
-will be incorporated in future simulator extensions to provide a quantitative
-evaluation of processing overhead.
+Future simulator extensions will benchmark execution time and computational
+complexity to quantify processing overhead.
 
 \section{Discussion of Main Findings}
 
@@ -1302,8 +1284,7 @@ future investigation toward more realistic quantum network testbeds.
 
 \section{Chapter Summary}
 
-This chapter presented the experimental evaluation of the proposed
-Temporal-State-Aware Routing framework.
+This chapter evaluated the proposed temporal-state-aware routing framework.
 
 The results demonstrate that considering temporal link conditions, fidelity
 degradation, coherence budget, and regeneration capability significantly

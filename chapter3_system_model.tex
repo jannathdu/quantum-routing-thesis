@@ -6,17 +6,18 @@ This chapter presents the system model and formal problem formulation for tempor
 
 The proposed model distinguishes between the underlying physical quantum network and the artificial entanglement overlay. The physical network represents the actual quantum communication infrastructure, including quantum nodes, repeaters, quantum memories, and physical quantum channels. In contrast, the artificial overlay represents proactively established entangled connections among Entanglement Service Providers (ESPs), enabling routing over an abstract entanglement topology rather than only over physical connectivity.
 
-Unlike classical network links, artificial e-links are dynamic and time-dependent resources. Their availability and quality are affected by probabilistic entanglement generation, finite quantum-memory coherence, decoherence-induced fidelity degradation, entanglement consumption during swapping operations, and regeneration processes. Therefore, the routing cost of an artificial e-link cannot be considered static and must be evaluated according to its current temporal state.
+Unlike classical network links, artificial e-links are dynamic and time-dependent resources \cite{caleffi2025quantumarchitecture,ercetin2026fidelityage,ceran2026age} . Their availability and quality are affected by probabilistic entanglement generation, finite quantum-memory coherence, decoherence-induced fidelity degradation, entanglement consumption during swapping operations, and regeneration processes. Therefore, the routing cost of an artificial e-link cannot be considered static and must be evaluated according to its current temporal state.
 
 To capture this dynamic behavior, each artificial e-link is associated with a temporal state containing its generation time, age, initial fidelity, effective fidelity, coherence time, remaining coherence budget, and regeneration-related cost. These temporal attributes enable the routing protocol to determine whether a structurally available route can remain physically usable throughout the expected end-to-end entanglement establishment process.
 
 This chapter further defines the time-dependent entangling-cost model and introduces the concept of temporal entangling stretch. These extensions provide a framework for evaluating compact-routing schemes, including the Partial-Anchor and Full-Anchor architectures, under heterogeneous conditions involving different link ages, fidelity levels, coherence characteristics, and regeneration requirements.
 
-Finally, the routing problem is formulated as a temporal resource-selection problem. The objective is to select a temporally feasible path that minimizes the time-dependent entangling cost while satisfying fidelity requirements, coherence-budget constraints, memory limitations, and compact-routing scalability conditions.
+Finally, routing is formulated as temporal resource selection. The objective
+is to minimize time-dependent entangling cost subject to fidelity, coherence,
+memory, and compact-routing constraints.
 \section{Network Architecture}
 
-The proposed system follows a two-tier quantum-network architecture composed of quantum edge nodes and Entanglement Service Providers (ESPs). The edge nodes generate application-level entanglement requests, while the ESPs maintain, manage, and route shared entanglement resources across the quantum-network core.
-
+The proposed system follows a two-tier quantum-network architecture composed of quantum edge nodes and Entanglement Service Providers (ESPs). The edge nodes generate application-level entanglement requests, while the ESPs maintain, manage, and route shared entanglement resources across the quantum-network core \cite{caleffi2025quantumarchitecture,lee2022router}.
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.95\textwidth]{system_architecture.png}
@@ -77,7 +78,7 @@ Each edge node is connected to a serving ESP through a local quantum connection.
 
 The ESPs constitute the quantum-network core. Each ESP is assumed to contain quantum memories, entanglement-generation interfaces, Bell-state measurement capabilities, and classical communication channels required for entanglement establishment, heralding, synchronization, and control operations.
 
-An Entanglement-Defined Controller (EDC), denoted by $\mathcal{C}_{\mathrm{EDC}}$, manages the control plane of the artificial entanglement overlay. The controller maintains information about artificial e-link availability, routing-table states, temporal link conditions, regeneration status, and network constraints.
+An Entanglement-Defined Controller (EDC), denoted by $\mathcal{C}_{\mathrm{EDC}}$, manages the control plane of the artificial entanglement overlay \cite{caleffi2025quantumarchitecture,dahlberg2019networks} . The controller maintains information about artificial e-link availability, routing-table states, temporal link conditions, regeneration status, and network constraints.
 
 The main functions of the EDC include:
 
@@ -91,7 +92,7 @@ The main functions of the EDC include:
     \item enforcing fidelity, memory, and coherence constraints.
 \end{itemize}
 
-The architecture separates the physical quantum network from the artificial entanglement overlay. The physical network represents the available quantum communication infrastructure, while the artificial overlay represents dynamically maintained entanglement resources established through entanglement generation and swapping operations.
+The architecture separates the physical quantum network from the artificial entanglement overlay. The physical network represents the available quantum communication infrastructure, while the artificial overlay represents dynamically maintained entanglement resources established through entanglement generation and swapping operations \cite{caleffi2025quantumarchitecture,lee2022router}
 
 The physical ESP-level network is represented as
 
@@ -311,7 +312,8 @@ The expected physical-route establishment delay is denoted by
     \right).
 \end{equation}
 
-This delay includes elementary-link generation time, classical heralding latency, memory waiting time, purification overhead, and entanglement-swapping delay.
+This delay includes link generation, classical heralding, memory waiting,
+purification, and entanglement swapping.
 
 A physical route is considered feasible only when sufficient quantum-memory resources are available and the resulting entangled state satisfies the required fidelity condition:
 
@@ -329,7 +331,9 @@ The physical quantum network provides the substrate for constructing artificial 
 Therefore, the quality of an artificial e-link depends on the physical path used for its creation, including generation delay, success probability, initial fidelity, memory consumption, and accumulated operational errors.
 \section{Artificial Entanglement Overlay Model}
 
-The artificial entanglement overlay represents the set of proactively established entangled connections maintained among Entanglement Service Providers. Unlike the physical quantum network, an artificial e-link may connect ESPs that are not physically adjacent by using multi-hop entanglement generation and swapping operations.
+The artificial overlay contains proactive entangled connections among ESPs.
+Unlike a physical link, an artificial e-link may connect nonadjacent ESPs
+through multihop generation and swapping.
 
 At time slot $t$, the artificial entanglement overlay is represented as
 
@@ -359,30 +363,45 @@ An artificial e-link between ESPs $v_i$ and $v_j$ is defined as
 
 The availability state of an artificial e-link is represented by
 
+The storage-availability state of an artificial e-link is represented by
+
 \begin{equation}
-    z_{ij}(t)
+    x_{ij}(t)
     =
     \begin{cases}
-        1, & \text{if a usable artificial e-link exists},\\
+        1, & \text{if the artificial e-link is stored and unconsumed at time } t,\\
         0, & \text{otherwise}.
     \end{cases}
 \end{equation}
 
-An artificial e-link is considered usable only when the entangled resource is available in quantum memory, has not been consumed by previous operations, and satisfies the required fidelity constraint:
+An artificial e-link is considered usable for routing only when it is
+available in quantum memory and its effective fidelity satisfies the
+link-level fidelity requirement:
 
 \begin{equation}
+    x_{ij}(t)=1,
+    \qquad
     F_{ij}^{\mathrm{eff}}(t)
     \geq
-    F_{\min}.
+    F_{\min}^{\mathrm{link}}.
 \end{equation}
 
-The artificial e-link is established through an underlying physical entanglement-generation path. Let
+Each artificial e-link is created through an underlying physical path. Let
 
 \begin{equation}
     P_{ij}^{\mathrm{gen}}
+    =
+    \left(
+    v_i,
+    v_{k_1},
+    \ldots,
+    v_{k_m},
+    v_j
+    \right)
 \end{equation}
 
-denote the physical route used to create an artificial e-link between ESPs $v_i$ and $v_j$.
+denote the physical route that creates the e-link between $v_i$ and $v_j$.
+Intermediate ESPs perform the required swapping operations.
 
 The generation success probability of the artificial e-link is determined by the physical path:
 
@@ -414,7 +433,8 @@ The initial fidelity of the generated artificial e-link is denoted by
 
 This initial fidelity depends on the quality of elementary entangled pairs, the number of entanglement-swapping operations, purification procedures, and accumulated hardware-induced errors during link establishment.
 
-Since artificial e-links are temporary quantum resources, the overlay topology evolves over time due to link generation, consumption, degradation, expiration, and regeneration. The evolution of the artificial overlay is expressed as
+Because artificial e-links are temporary, the overlay evolves through
+generation, consumption, degradation, expiration, and regeneration. The evolution of the artificial overlay is expressed as
 
 \begin{equation}
     E_{\mathrm{A}}(t+1)
@@ -687,7 +707,7 @@ An artificial e-link is classified as stale when its temporal quality becomes in
 \begin{equation}
     F_{ij}^{\mathrm{eff}}(t)
     <
-    F_{\min},
+   F_{\min}^{\mathrm{link}},
 \end{equation}
 
 or
@@ -791,7 +811,7 @@ A general temporal fidelity model can be expressed as
 
 where $\epsilon_{ij}^{\mathrm{op}}$ represents accumulated operational errors caused by imperfect quantum operations.
 
-For analytical modeling and simulation, an exponential decoherence model is adopted:
+The analysis and simulation use an exponential decoherence model:
 
 \begin{equation}
     F_{ij}^{\mathrm{eff}}(t)
@@ -907,7 +927,8 @@ For an artificial-overlay route
     \right),
 \end{equation}
 
-the end-to-end fidelity depends on the effective fidelity of all artificial e-links along the selected path and the success probability of intermediate swapping operations.
+the end-to-end fidelity depends on the effective fidelity of all artificial e-links along the selected path and the fidelity-retention factors of intermediate swapping operations.
+
 Let the set of artificial e-links contained in route $R_{s,d}(t)$ be denoted by
 
 \begin{equation}
@@ -917,7 +938,8 @@ Let the set of artificial e-links contained in route $R_{s,d}(t)$ be denoted by
     \right).
 \end{equation}
 
-Under the Werner-state approximation, the accumulated route-level Werner parameter before considering swapping imperfections is
+Under the Werner-state approximation, the route parameter before swapping
+imperfections is
 
 \begin{equation}
     p_{\mathrm{route}}^{W}(t)
@@ -959,7 +981,9 @@ The end-to-end Werner parameter after considering swapping imperfections is appr
     \in
     R_{s,d}(t)
     \setminus
-    \{v_s,v_d\}
+    \left\{
+    v_s,v_d
+    \right\}
     }
     \lambda_r
     \right).
@@ -981,7 +1005,7 @@ A selected route is considered fidelity-feasible at the current time only if
 \begin{equation}
     F_{s,d}^{\mathrm{end}}(t)
     \geq
-    F_{\min}.
+    F_{\min}^{\mathrm{end}}.
 \end{equation}
 
 However, current-time fidelity alone is insufficient for temporal routing decisions. In practice, additional waiting time may occur due to classical communication, resource scheduling, and intermediate swapping operations. During this interval, the stored e-links continue to experience decoherence.
@@ -1010,8 +1034,7 @@ For an artificial e-link $(i,j)$, the predicted fidelity at consumption time is 
     \left(
     -\frac{
     \widehat{D}_{ij}^{\mathrm{use}}(t)
-    }
-    {
+    }{
     T_{2,ij}
     }
     \right),
@@ -1019,7 +1042,36 @@ For an artificial e-link $(i,j)$, the predicted fidelity at consumption time is 
 
 where $\widehat{D}_{ij}^{\mathrm{use}}(t)$ represents the predicted waiting time before the e-link is consumed during route establishment.
 
-Using these predicted link fidelities, the end-to-end fidelity at route completion can be estimated as
+Using these predicted link fidelities, the predicted end-to-end Werner parameter is defined as
+
+\begin{equation}
+    \widehat{p}_{s,d}^{W,\mathrm{end}}(t)
+    =
+    \left(
+    \prod_{
+    (i,j)
+    \in
+    E_{\mathrm{A}}(R_{s,d}(t))
+    }
+    \frac{
+    4\widehat{F}_{ij}^{\mathrm{cons}}(t)-1
+    }{3}
+    \right)
+    \left(
+    \prod_{
+    v_r
+    \in
+    R_{s,d}(t)
+    \setminus
+    \left\{
+    v_s,v_d
+    \right\}
+    }
+    \lambda_r
+    \right).
+\end{equation}
+
+The end-to-end fidelity at route completion can then be estimated as
 
 \begin{equation}
     \widehat{F}_{s,d}^{\mathrm{end}}
@@ -1043,7 +1095,7 @@ A route is considered temporally fidelity-feasible only if
     \widehat{D}_{s,d}^{\mathrm{route}}(t)
     \right)
     \geq
-    F_{\min}.
+    F_{\min}^{\mathrm{end}}.
 \end{equation}
 
 In some cases, purification may be applied when the stored fidelity is insufficient but additional entangled pairs are available. The output fidelity of a purification procedure can be represented generally as
@@ -1131,7 +1183,7 @@ A positive coherence budget indicates that the e-link is expected to remain with
 A non-positive value indicates that the e-link is likely to expire before it can be used:
 
 \begin{equation}
-    B_{ij}(t)\leq0.
+    B_{ij}(t)\leq 0.
 \end{equation}
 
 The predicted utilization delay can include several components:
@@ -1151,7 +1203,7 @@ The predicted utilization delay can include several components:
 where
 
 \begin{itemize}
-    \item $\widehat{D}_{ij}^{\mathrm{queue}}(t)$ represents scheduling and resource waiting delay;
+    \item $\widehat{D}_{ij}^{\mathrm{queue}}(t)$ represents scheduling and resource-waiting delay;
     \item $\widehat{D}_{ij}^{\mathrm{coord}}(t)$ represents classical coordination delay;
     \item $\widehat{D}_{ij}^{\mathrm{pur}}(t)$ represents purification-related delay; and
     \item $\widehat{D}_{ij}^{\mathrm{swap}}(t)$ represents the expected delay before entanglement swapping.
@@ -1207,15 +1259,12 @@ A normalized coherence-budget ratio is defined as
     =
     \frac{
     B_{ij}(t)
-    }
-    {
+    }{
     T_{2,ij}
     }.
 \end{equation}
 
-This normalization enables comparison among e-links with different coherence times.
-
-The normalized budget satisfies
+This normalization enables comparison among e-links with different coherence times. The normalized budget satisfies
 
 \begin{equation}
     \widetilde{B}_{ij}(t)
@@ -1231,21 +1280,21 @@ The coherence-budget risk cost is defined as
     C_B(i,j,t)
     =
     \begin{cases}
-    \dfrac{1}{
-    \widetilde{B}_{ij}(t)+\varepsilon
-    },
-    &
-    \widetilde{B}_{ij}(t)>0,
-    \\[12pt]
-    +\infty,
-    &
-    \widetilde{B}_{ij}(t)\leq0,
+        \dfrac{1}{
+        \widetilde{B}_{ij}(t)+\varepsilon
+        },
+        &
+        \widetilde{B}_{ij}(t)>0,
+        \\[12pt]
+        +\infty,
+        &
+        \widetilde{B}_{ij}(t)\leq 0,
     \end{cases}
 \end{equation}
 
 where $\varepsilon>0$ avoids numerical instability near zero.
 
-This cost increases sharply when an e-link approaches expiration, discouraging selection of temporally unreliable resources.
+This cost increases sharply when an e-link approaches expiration, discouraging the selection of temporally unreliable resources.
 
 The coherence-budget state can also be classified using predefined thresholds:
 
@@ -1254,14 +1303,21 @@ The coherence-budget state can also be classified using predefined thresholds:
     =
     \begin{cases}
         \mathrm{Safe},
-        & B_{ij}(t)\geq B_{\mathrm{high}},\\
+        &
+        B_{ij}(t)\geq B_{\mathrm{high}},
+        \\
         \mathrm{Warning},
-        & B_{\mathrm{low}}
-        \leq B_{ij}(t)<B_{\mathrm{high}},\\
+        &
+        B_{\mathrm{low}}
+        \leq B_{ij}(t)<B_{\mathrm{high}},
+        \\
         \mathrm{Critical},
-        & 0<B_{ij}(t)<B_{\mathrm{low}},\\
+        &
+        0<B_{ij}(t)<B_{\mathrm{low}},
+        \\
         \mathrm{Expired},
-        & B_{ij}(t)\leq0.
+        &
+        B_{ij}(t)\leq 0.
     \end{cases}
 \end{equation}
 
@@ -1283,11 +1339,11 @@ where
 
 \begin{itemize}
     \item $C_B(i,j,t)$ represents coherence-budget risk;
-    \item $C_F(i,j,t)$ represents fidelity degradation risk; and
-    \item $I_{ij}^{\mathrm{struct}}$ represents structural importance of the e-link in the compact overlay.
+    \item $C_F(i,j,t)$ represents fidelity-degradation risk; and
+    \item $I_{ij}^{\mathrm{struct}}$ represents the structural importance of the e-link in the compact overlay.
 \end{itemize}
 
-The structural importance term enables anchor links and frequently used artificial links to receive higher regeneration priority than links with limited routing influence.
+The structural-importance term enables anchor links and frequently used artificial links to receive higher regeneration priority than links with limited routing influence.
 
 Therefore, the coherence-budget model establishes a direct relationship among quantum-memory lifetime, route feasibility, temporal routing decisions, and artificial-overlay maintenance.
 \section{Temporal Route-Feasibility Condition}
@@ -1388,72 +1444,135 @@ The fourth requirement limits the route-completion delay:
     D_{\max},
 \end{equation}
 
-where $D_{\max}$ represents the maximum acceptable entanglement-establishment delay.
+where $D_{\max}$ is the maximum acceptable establishment delay.
 
 The fifth requirement ensures that sufficient quantum-memory resources are available along the route:
 
 \begin{equation}
-    \sum_{\substack{j:\,
-    e_{ij}^{\mathrm{A}}\in R_{s,d}(t)}}
+    \sum_{
+    j:
+    e_{ij}^{\mathrm{A}}
+    \in
+    R_{s,d}(t)
+    }
     n_{ij}^{\mathrm{ebit}}(t)
-    \leq M_i,
+    \leq
+    M_i,
     \qquad
-    \forall\, v_i\in R_{s,d}(t).
+    \forall v_i
+    \in
+    R_{s,d}(t).
 \end{equation}
 
 A binary temporal route-feasibility indicator is defined as
 
 \begin{equation}
-    \chi_{s,d}\!\left(R_{s,d}(t)\right)
-    \in \{0,1\}.
+    \chi_{s,d}
+    \left(
+    R_{s,d}(t)
+    \right)
+    \in
+    \left\{
+    0,1
+    \right\}.
 \end{equation}
 
 For compactness, define the active-edge set of the selected route as
-$\mathcal{E}_{s,d}(t)
-=E_{\mathrm{A}}\!\left(R_{s,d}(t)\right)$.
-The indicator takes value one only when all temporal routing
-requirements are satisfied:
+
+\begin{equation}
+    \mathcal{E}_{s,d}(t)
+    =
+    E_{\mathrm{A}}
+    \left(
+    R_{s,d}(t)
+    \right).
+\end{equation}
+
+The indicator takes the value one only when all temporal-routing requirements are satisfied:
 
 \begin{equation}
 \begin{aligned}
-\chi_{s,d}(R_{s,d}(t))
-&=
-\prod_{(i,j)\in\mathcal{E}_{s,d}(t)}
-x_{ij}(t)
-\\
-&\times
-\prod_{(i,j)\in\mathcal{E}_{s,d}(t)}
-\mathbf{1}
-\left(
-B_{ij}(t)\geq\delta_{\mathrm{safe}}
-\right)
-\\
-&\times
-\prod_{(i,j)\in\mathcal{E}_{s,d}(t)}
-\mathbf{1}
-\left(
-\widehat{F}_{ij}^{\mathrm{cons}}(t)
-\geq F_{\min}^{\mathrm{link}}
-\right)
-\\
-&\times
-\mathbf{1}
-\left(
-\widehat{F}_{s,d}^{\mathrm{end}}
-(t+\widehat{D}_{s,d}^{\mathrm{route}}(t))
-\geq F_{\min}^{\mathrm{end}}
-\right)
-\\
-&\times
-\mathbf{1}
-\left(
-\widehat{D}_{s,d}^{\mathrm{route}}(t)
-\leq D_{\max}
-\right).
+    \chi_{s,d}
+    \left(
+    R_{s,d}(t)
+    \right)
+    &=
+    \prod_{
+    (i,j)
+    \in
+    \mathcal{E}_{s,d}(t)
+    }
+    x_{ij}(t)
+    \\
+    &\quad\times
+    \prod_{
+    (i,j)
+    \in
+    \mathcal{E}_{s,d}(t)
+    }
+    \mathbf{1}
+    \left[
+    B_{ij}(t)
+    \geq
+    \delta_{\mathrm{safe}}
+    \right]
+    \\
+    &\quad\times
+    \prod_{
+    (i,j)
+    \in
+    \mathcal{E}_{s,d}(t)
+    }
+    \mathbf{1}
+    \left[
+    \widehat{F}_{ij}^{\mathrm{cons}}(t)
+    \geq
+    F_{\min}^{\mathrm{link}}
+    \right]
+    \\
+    &\quad\times
+    \mathbf{1}
+    \left[
+    \widehat{F}_{s,d}^{\mathrm{end}}
+    \left(
+    t+
+    \widehat{D}_{s,d}^{\mathrm{route}}(t)
+    \right)
+    \geq
+    F_{\min}^{\mathrm{end}}
+    \right]
+    \\
+    &\quad\times
+    \mathbf{1}
+    \left[
+    \widehat{D}_{s,d}^{\mathrm{route}}(t)
+    \leq
+    D_{\max}
+    \right]
+    \\
+    &\quad\times
+    \prod_{
+    v_i
+    \in
+    R_{s,d}(t)
+    }
+    \mathbf{1}
+    \left[
+    \sum_{
+    j:
+    e_{ij}^{\mathrm{A}}
+    \in
+    R_{s,d}(t)
+    }
+    n_{ij}^{\mathrm{ebit}}(t)
+    \leq
+    M_i
+    \right].
 \end{aligned}
 \end{equation}
 
-and the route must be rejected, regenerated, repaired, or replaced by an alternative temporally feasible path.
+If $\chi_{s,d}\left(R_{s,d}(t)\right)=0$, the route must be rejected, regenerated, repaired, or replaced by an alternative temporally feasible path.
+
 The set of all temporally feasible routes between ESPs $v_s$ and $v_d$ is defined as
 
 \begin{equation}
@@ -1494,16 +1613,16 @@ In this situation, the Entanglement-Defined Controller may perform one of the fo
 Therefore, the proposed framework classifies each candidate route into three temporal states:
 
 \begin{equation}
-    \mathrm{RouteState}
-    =
-    \begin{cases}
-        \mathrm{Feasible},
-        & \text{all temporal constraints are satisfied},\\
-        \mathrm{Repairable},
-        & \text{constraints can be restored through maintenance actions},\\
-        \mathrm{Infeasible},
-        & \text{no acceptable recovery action exists}.
-    \end{cases}
+\mathrm{RouteState}
+=
+\begin{cases}
+\mathrm{Feasible},
+& \text{if all constraints hold},\\
+\mathrm{Repairable},
+& \text{if maintenance restores feasibility},\\
+\mathrm{Infeasible},
+& \text{if no valid recovery exists}.
+\end{cases}
 \end{equation}
 
 A repairable route contains one or more critical artificial e-links whose regeneration delay and resource requirements remain within predefined limits.
@@ -1589,17 +1708,17 @@ The time-dependent entangling-cost metric quantifies the cost of selecting an ar
 For an artificial e-link $(i,j)$ at time $t$, the proposed time-dependent cost is defined as
 
 \begin{equation}
-    w_t(i,j)
-    =
-    \alpha_F C_F(i,j,t)
-    +
-    \alpha_A C_A(i,j,t)
-    +
-    \alpha_B C_B(i,j,t)
-    +
-    \alpha_R C_R(i,j,t)
-    +
-    \alpha_S C_S(i,j),
+\begin{aligned}
+w_t(i,j)
+={}&
+\alpha_F C_F(i,j,t)
++\alpha_A C_A(i,j,t)
++\alpha_B C_B(i,j,t)
+\\
+&+
+\alpha_R C_R(i,j,t)
++\alpha_S C_S(i,j).
+\end{aligned}
 \end{equation}
 
 where
@@ -1635,7 +1754,7 @@ with
     1.
 \end{equation}
 
-The fidelity-related cost is defined according to the predicted consumption-time fidelity:
+The fidelity cost is based on the predicted fidelity at consumption:
 
 \begin{equation}
     C_F(i,j,t)
@@ -1805,8 +1924,9 @@ The routing objective is therefore formulated as selecting the temporally feasib
     R_{s,d}(t)
     \right).
 \end{equation}
-
-This formulation transforms compact quantum routing from a static shortest-path problem into a temporal resource-selection problem where route quality depends on both topology and the evolving physical state of entanglement resources.
+This formulation converts static compact routing into temporal resource
+selection. Route quality depends on both topology and evolving entanglement
+states.
 
 A normalized structural-importance score is defined as
 
@@ -1953,7 +2073,8 @@ Therefore, stale or expired artificial e-links cannot be selected during tempora
 The weighting parameters are not assumed to be universally optimal. Instead, their influence is evaluated through sensitivity analysis to determine how fidelity, age, coherence budget, regeneration overhead, and structural factors affect routing performance.
 \section{Temporal Entangling Stretch}
 
-Temporal entangling stretch extends the conventional entangling-stretch metric by evaluating routing performance under the time-varying state of artificial entanglement resources. Unlike static stretch, which assumes that all artificial links remain available, temporal entangling stretch considers fidelity degradation, coherence limitation, and regeneration-related effects.
+Temporal entangling stretch evaluates routing under time-varying artificial
+entanglement resources. Unlike static stretch, which assumes that all artificial links remain available, temporal entangling stretch considers fidelity degradation, coherence limitation, and regeneration-related effects.
 
 For source ESP $v_s$ and destination ESP $v_d$, let
 
@@ -2018,7 +2139,7 @@ The worst-case temporal entangling stretch at time $t$ is defined as
     ES_t(s,d).
 \end{equation}
 
-The average temporal entangling stretch over evaluated source--destination pairs is
+The mean temporal stretch over evaluated source--destination pairs is
 
 \begin{equation}
     \overline{ES}_t
